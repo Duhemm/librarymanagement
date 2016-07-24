@@ -58,142 +58,119 @@ object ConfigurationReport {
  * OrganizationArtifactReport groups the ModuleReport of both winners and evicted reports by their organization and name,
  * which can be used to calculate detailed evction warning etc.
  */
-final class OrganizationArtifactReport private[sbt] (
-  val organization: String,
-  val name: String,
-  val modules: Seq[ModuleReport]
-) {
-  override def toString: String = {
-    val details = modules map { _.detailReport }
-    s"\t$organization:$name\n${details.mkString}\n"
-  }
-}
-object OrganizationArtifactReport {
-  implicit val pickler: Pickler[OrganizationArtifactReport] with Unpickler[OrganizationArtifactReport] = PicklerUnpickler.generate[OrganizationArtifactReport]
+// final class OrganizationArtifactReport private[sbt] (
+//   val organization: String,
+//   val name: String,
+//   val modules: Seq[ModuleReport]
+// ) {
+//   override def toString: String = {
+//     val details = modules map { _.detailReport }
+//     s"\t$organization:$name\n${details.mkString}\n"
+//   }
+// }
+// object OrganizationArtifactReport {
+//   implicit val pickler: Pickler[OrganizationArtifactReport] with Unpickler[OrganizationArtifactReport] = PicklerUnpickler.generate[OrganizationArtifactReport]
 
-  def apply(organization: String, name: String, modules: Seq[ModuleReport]): OrganizationArtifactReport =
-    new OrganizationArtifactReport(organization, name, modules)
-}
+//   def apply(organization: String, name: String, modules: Seq[ModuleReport]): OrganizationArtifactReport =
+//     new OrganizationArtifactReport(organization, name, modules)
+// }
 
-/**
- * Provides information about the resolution of a module.
- * This information is in the context of a specific configuration.
- * @param module the `ModuleID` this report is for.
- * @param artifacts the resolved artifacts for this module, paired with the File the artifact was retrieved to.
- * @param missingArtifacts the missing artifacts for this module.
- */
-final class ModuleReport(
-  val module: ModuleID,
-  val artifacts: Seq[(Artifact, File)],
-  val missingArtifacts: Seq[Artifact],
-  val status: Option[String],
-  val publicationDate: Option[ju.Date],
-  val resolver: Option[String],
-  val artifactResolver: Option[String],
-  val evicted: Boolean,
-  val evictedData: Option[String],
-  val evictedReason: Option[String],
-  val problem: Option[String],
-  val homepage: Option[String],
-  val extraAttributes: Map[String, String],
-  val isDefault: Option[Boolean],
-  val branch: Option[String],
-  val configurations: Seq[String],
-  val licenses: Seq[(String, Option[String])],
-  val callers: Seq[Caller]
-) {
+// /**
+//  * Provides information about the resolution of a module.
+//  * This information is in the context of a specific configuration.
+//  * @param module the `ModuleID` this report is for.
+//  * @param artifacts the resolved artifacts for this module, paired with the File the artifact was retrieved to.
+//  * @param missingArtifacts the missing artifacts for this module.
+//  */
+// final class ModuleReport(
+//   val module: ModuleID,
+//   val artifacts: Seq[(Artifact, File)],
+//   val missingArtifacts: Seq[Artifact],
+//   val status: Option[String],
+//   val publicationDate: Option[ju.Date],
+//   val resolver: Option[String],
+//   val artifactResolver: Option[String],
+//   val evicted: Boolean,
+//   val evictedData: Option[String],
+//   val evictedReason: Option[String],
+//   val problem: Option[String],
+//   val homepage: Option[String],
+//   val extraAttributes: Map[String, String],
+//   val isDefault: Option[Boolean],
+//   val branch: Option[String],
+//   val configurations: Seq[String],
+//   val licenses: Seq[(String, Option[String])],
+//   val callers: Seq[Caller]
+// ) {
 
-  private[this] lazy val arts: Seq[String] = artifacts.map(_.toString) ++ missingArtifacts.map(art => "(MISSING) " + art)
-  override def toString: String = {
-    s"\t\t$module: " +
-      (if (arts.size <= 1) "" else "\n\t\t\t") + arts.mkString("\n\t\t\t") + "\n"
-  }
-  def detailReport: String =
-    s"\t\t- ${module.revision}\n" +
-      (if (arts.size <= 1) "" else arts.mkString("\t\t\t", "\n\t\t\t", "\n")) +
-      reportStr("status", status) +
-      reportStr("publicationDate", publicationDate map { _.toString }) +
-      reportStr("resolver", resolver) +
-      reportStr("artifactResolver", artifactResolver) +
-      reportStr("evicted", Some(evicted.toString)) +
-      reportStr("evictedData", evictedData) +
-      reportStr("evictedReason", evictedReason) +
-      reportStr("problem", problem) +
-      reportStr("homepage", homepage) +
-      reportStr(
-        "textraAttributes",
-        if (extraAttributes.isEmpty) None
-        else { Some(extraAttributes.toString) }
-      ) +
-        reportStr("isDefault", isDefault map { _.toString }) +
-        reportStr("branch", branch) +
-        reportStr(
-          "configurations",
-          if (configurations.isEmpty) None
-          else { Some(configurations.mkString(", ")) }
-        ) +
-          reportStr(
-            "licenses",
-            if (licenses.isEmpty) None
-            else { Some(licenses.mkString(", ")) }
-          ) +
-            reportStr(
-              "callers",
-              if (callers.isEmpty) None
-              else { Some(callers.mkString(", ")) }
-            )
-  private[sbt] def reportStr(key: String, value: Option[String]): String =
-    value map { x => s"\t\t\t$key: $x\n" } getOrElse ""
+//   private[this] lazy val arts: Seq[String] = artifacts.map(_.toString) ++ missingArtifacts.map(art => "(MISSING) " + art)
+//   override def toString: String = {
+//     s"\t\t$module: " +
+//       (if (arts.size <= 1) "" else "\n\t\t\t") + arts.mkString("\n\t\t\t") + "\n"
+//   }
+//   def detailReport: String =
+//     s"\t\t- ${module.revision}\n" +
+//       (if (arts.size <= 1) "" else arts.mkString("\t\t\t", "\n\t\t\t", "\n")) +
+//       reportStr("status", status) +
+//       reportStr("publicationDate", publicationDate map { _.toString }) +
+//       reportStr("resolver", resolver) +
+//       reportStr("artifactResolver", artifactResolver) +
+//       reportStr("evicted", Some(evicted.toString)) +
+//       reportStr("evictedData", evictedData) +
+//       reportStr("evictedReason", evictedReason) +
+//       reportStr("problem", problem) +
+//       reportStr("homepage", homepage) +
+//       reportStr(
+//         "textraAttributes",
+//         if (extraAttributes.isEmpty) None
+//         else { Some(extraAttributes.toString) }
+//       ) +
+//         reportStr("isDefault", isDefault map { _.toString }) +
+//         reportStr("branch", branch) +
+//         reportStr(
+//           "configurations",
+//           if (configurations.isEmpty) None
+//           else { Some(configurations.mkString(", ")) }
+//         ) +
+//           reportStr(
+//             "licenses",
+//             if (licenses.isEmpty) None
+//             else { Some(licenses.mkString(", ")) }
+//           ) +
+//             reportStr(
+//               "callers",
+//               if (callers.isEmpty) None
+//               else { Some(callers.mkString(", ")) }
+//             )
+//   private[sbt] def reportStr(key: String, value: Option[String]): String =
+//     value map { x => s"\t\t\t$key: $x\n" } getOrElse ""
 
-  def retrieve(f: (ModuleID, Artifact, File) => File): ModuleReport =
-    copy(artifacts = artifacts.map { case (art, file) => (art, f(module, art, file)) })
+//   def retrieve(f: (ModuleID, Artifact, File) => File): ModuleReport =
+//     copy(artifacts = artifacts.map { case (art, file) => (art, f(module, art, file)) })
+// }
 
-  private[sbt] def copy(
-    module: ModuleID = module,
-    artifacts: Seq[(Artifact, File)] = artifacts,
-    missingArtifacts: Seq[Artifact] = missingArtifacts,
-    status: Option[String] = status,
-    publicationDate: Option[ju.Date] = publicationDate,
-    resolver: Option[String] = resolver,
-    artifactResolver: Option[String] = artifactResolver,
-    evicted: Boolean = evicted,
-    evictedData: Option[String] = evictedData,
-    evictedReason: Option[String] = evictedReason,
-    problem: Option[String] = problem,
-    homepage: Option[String] = homepage,
-    extraAttributes: Map[String, String] = extraAttributes,
-    isDefault: Option[Boolean] = isDefault,
-    branch: Option[String] = branch,
-    configurations: Seq[String] = configurations,
-    licenses: Seq[(String, Option[String])] = licenses,
-    callers: Seq[Caller] = callers
-  ): ModuleReport =
-    new ModuleReport(module, artifacts, missingArtifacts, status, publicationDate, resolver, artifactResolver,
-      evicted, evictedData, evictedReason, problem, homepage, extraAttributes, isDefault, branch, configurations, licenses, callers)
-}
+// object ModuleReport {
+//   def apply(module: ModuleID, artifacts: Seq[(Artifact, File)], missingArtifacts: Seq[Artifact]): ModuleReport =
+//     new ModuleReport(module, artifacts, missingArtifacts, None, None, None, None,
+//       false, None, None, None, None, Map(), None, None, Nil, Nil, Nil)
+//   implicit val pickler: Pickler[ModuleReport] with Unpickler[ModuleReport] = PicklerUnpickler.generate[ModuleReport]
+// }
 
-object ModuleReport {
-  def apply(module: ModuleID, artifacts: Seq[(Artifact, File)], missingArtifacts: Seq[Artifact]): ModuleReport =
-    new ModuleReport(module, artifacts, missingArtifacts, None, None, None, None,
-      false, None, None, None, None, Map(), None, None, Nil, Nil, Nil)
-  implicit val pickler: Pickler[ModuleReport] with Unpickler[ModuleReport] = PicklerUnpickler.generate[ModuleReport]
-}
-
-final class Caller(
-  val caller: ModuleID,
-  val callerConfigurations: Seq[String],
-  val callerExtraAttributes: Map[String, String],
-  val isForceDependency: Boolean,
-  val isChangingDependency: Boolean,
-  val isTransitiveDependency: Boolean,
-  val isDirectlyForceDependency: Boolean
-) {
-  override def toString: String =
-    s"$caller"
-}
-object Caller {
-  implicit val pickler: Pickler[Caller] with Unpickler[Caller] = PicklerUnpickler.generate[Caller]
-}
+// final class Caller(
+//   val caller: ModuleID,
+//   val callerConfigurations: Seq[String],
+//   val callerExtraAttributes: Map[String, String],
+//   val isForceDependency: Boolean,
+//   val isChangingDependency: Boolean,
+//   val isTransitiveDependency: Boolean,
+//   val isDirectlyForceDependency: Boolean
+// ) {
+//   override def toString: String =
+//     s"$caller"
+// }
+// object Caller {
+//   implicit val pickler: Pickler[Caller] with Unpickler[Caller] = PicklerUnpickler.generate[Caller]
+// }
 
 /**
  * Provides information about dependency resolution.
@@ -302,16 +279,16 @@ object UpdateReport {
   }
 }
 
-final class UpdateStats(val resolveTime: Long, val downloadTime: Long, val downloadSize: Long, val cached: Boolean) {
-  override def toString = Seq("Resolve time: " + resolveTime + " ms", "Download time: " + downloadTime + " ms", "Download size: " + downloadSize + " bytes").mkString(", ")
-  private[sbt] def withCached(c: Boolean): UpdateStats =
-    new UpdateStats(
-      resolveTime = this.resolveTime,
-      downloadTime = this.downloadTime,
-      downloadSize = this.downloadSize,
-      cached = c
-    )
-}
-object UpdateStats {
-  implicit val pickler: Pickler[UpdateStats] with Unpickler[UpdateStats] = PicklerUnpickler.generate[UpdateStats]
-}
+// final class UpdateStats(val resolveTime: Long, val downloadTime: Long, val downloadSize: Long, val cached: Boolean) {
+//   override def toString = Seq("Resolve time: " + resolveTime + " ms", "Download time: " + downloadTime + " ms", "Download size: " + downloadSize + " bytes").mkString(", ")
+//   private[sbt] def withCached(c: Boolean): UpdateStats =
+//     new UpdateStats(
+//       resolveTime = this.resolveTime,
+//       downloadTime = this.downloadTime,
+//       downloadSize = this.downloadSize,
+//       cached = c
+//     )
+// }
+// object UpdateStats {
+//   implicit val pickler: Pickler[UpdateStats] with Unpickler[UpdateStats] = PicklerUnpickler.generate[UpdateStats]
+// }

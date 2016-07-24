@@ -28,8 +28,10 @@ import scala.collection.mutable
 
 import sbt.util.Logger
 import sbt.librarymanagement._
-import Resolver.PluginPattern
+import ResolverUtil.PluginPattern
 import ivyint.{ CachedResolutionResolveEngine, CachedResolutionResolveCache, SbtDefaultDependencyDescriptor }
+
+import sbt.util.InterfaceUtil.m2o
 
 final class IvySbt(val configuration: IvyConfiguration) {
   import configuration.baseDirectory
@@ -54,7 +56,7 @@ final class IvySbt(val configuration: IvyConfiguration) {
       // If provided a GlobalLock, we can use that to ensure safe access to the cache.
       // Otherwise, we can at least synchronize within the JVM.
       //   For thread-safety in particular, Ivy uses a static DocumentBuilder, which is not thread-safe.
-      configuration.lock match {
+      m2o(configuration.lock) match {
         case Some(lock) => lock(ivyLockFile, new Callable[T] { def call = action() })
         case None       => action()
       }
@@ -73,8 +75,8 @@ final class IvySbt(val configuration: IvyConfiguration) {
           IvySbt.loadURI(is, e.uri)
         case i: InlineIvyConfiguration =>
           is.setVariable("ivy.checksums", i.checksums mkString ",")
-          i.paths.ivyHome foreach is.setDefaultIvyUserDir
-          IvySbt.configureCache(is, i.localOnly, i.resolutionCacheDir)
+          m2o(i.paths.ivyHome) foreach is.setDefaultIvyUserDir
+          IvySbt.configureCache(is, i.localOnly, m2o(i.resolutionCacheDir))
           IvySbt.setResolvers(is, i.resolvers, i.otherResolvers, i.localOnly, configuration.updateOptions, configuration.log)
           IvySbt.setModuleConfigurations(is, i.moduleConfigurations, configuration.log)
       }
@@ -166,23 +168,24 @@ final class IvySbt(val configuration: IvyConfiguration) {
             case pc: PomConfiguration      => configurePom(pc)
             case ifc: IvyFileConfiguration => configureIvyFile(ifc)
           }
-        moduleSettings.ivyScala.foreach(IvyScala.checkModule(baseModule, baseConfiguration, configuration.log))
+        m2o(moduleSettings.ivyScala).foreach(IvyScalaUtil.checkModule(baseModule, baseConfiguration, configuration.log))
         IvySbt.addExtraNamespace(baseModule)
         (baseModule, baseConfiguration)
       }
     private def configureInline(ic: InlineConfiguration, log: Logger) =
       {
-        import ic._
-        val moduleID = newConfiguredModuleID(module, moduleInfo, configurations)
-        IvySbt.setConflictManager(moduleID, conflictManager, ivy.getSettings)
-        val defaultConf = defaultConfiguration getOrElse Configurations.config(ModuleDescriptor.DEFAULT_CONFIGURATION)
-        log.debug("Using inline dependencies specified in Scala" + (if (ivyXML.isEmpty) "." else " and XML."))
+        import scala.collection.JavaConverters._
+        val moduleID = newConfiguredModuleID(ic.module, ic.moduleInfo, ic.configurations)
+        IvySbt.setConflictManager(moduleID, ic.conflictManager, ivy.getSettings)
+        val defaultConf = m2o(ic.defaultConfiguration) getOrElse Configurations.config(ModuleDescriptor.DEFAULT_CONFIGURATION)
+        log.debug("Using inline dependencies specified in Scala" + (if (ic.ivyXML.isEmpty) "." else " and XML."))
 
-        val parser = IvySbt.parseIvyXML(ivy.getSettings, IvySbt.wrapped(module, ivyXML), moduleID, defaultConf.name, validate)
+        val parser = IvySbt.parseIvyXML(ivy.getSettings, IvySbt.wrapped(ic.module, ic.ivyXML), moduleID, defaultConf.name, ic.validate)
+        val overrides = ic.overrides.asScala.toSet
         IvySbt.addMainArtifact(moduleID)
         IvySbt.addOverrides(moduleID, overrides, ivy.getSettings.getMatcher(PatternMatcher.EXACT))
-        IvySbt.addExcludes(moduleID, excludes, ivyScala)
-        val transformedDeps = IvySbt.overrideDirect(dependencies, overrides)
+        IvySbt.addExcludes(moduleID, ic.excludes, m2o(ic.ivyScala))
+        val transformedDeps = IvySbt.overrideDirect(ic.dependencies, overrides)
         IvySbt.addDependencies(moduleID, transformedDeps, parser)
         (moduleID, parser.getDefaultConf)
       }
@@ -191,8 +194,8 @@ final class IvySbt(val configuration: IvyConfiguration) {
         val mod = new DefaultModuleDescriptor(IvySbt.toID(module), "release", null, false)
         mod.setLastModified(System.currentTimeMillis)
         mod.setDescription(moduleInfo.description)
-        moduleInfo.homepage foreach { h => mod.setHomePage(h.toString) }
-        moduleInfo.licenses foreach { l => mod.addLicense(new License(l._1, l._2.toString)) }
+        m2o(moduleInfo.homepage) foreach { h => mod.setHomePage(h.toString) }
+        moduleInfo.licenses foreach { l => mod.addLicense(new License(l.get1, l.get2.toString)) }
         IvySbt.addConfigurations(mod, configurations)
         IvySbt.addArtifacts(mod, module.explicitArtifacts)
         mod
@@ -205,7 +208,7 @@ final class IvySbt(val configuration: IvyConfiguration) {
         val dmd = IvySbt.toDefaultModuleDescriptor(md)
         IvySbt.addConfigurations(dmd, Configurations.defaultInternal)
         val defaultConf = Configurations.DefaultMavenConfiguration.name
-        for (is <- pc.ivyScala) if (pc.autoScalaTools) {
+        for (is <- m2o(pc.ivyScala)) if (pc.autoScalaTools) {
           val confParser = new CustomXmlParser.CustomParser(settings, Some(defaultConf))
           confParser.setMd(dmd)
           addScalaToolDependencies(dmd, confParser, is)
@@ -220,7 +223,7 @@ final class IvySbt(val configuration: IvyConfiguration) {
         parser.setSource(toURL(ifc.file))
         parser.parse()
         val dmd = IvySbt.toDefaultModuleDescriptor(parser.getModuleDescriptor())
-        for (is <- ifc.ivyScala) if (ifc.autoScalaTools)
+        for (is <- m2o(ifc.ivyScala)) if (ifc.autoScalaTools)
           addScalaToolDependencies(dmd, parser, is)
         (dmd, parser.getDefaultConf)
       }
@@ -391,8 +394,7 @@ private[sbt] object IvySbt {
     {
       import org.apache.ivy.core.module.descriptor.{ Configuration => IvyConfig }
       import IvyConfig.Visibility._
-      import configuration._
-      new IvyConfig(name, if (isPublic) PUBLIC else PRIVATE, description, extendsConfigs.map(_.name).toArray, transitive, null)
+      new IvyConfig(configuration.name, if (configuration.isPublic) PUBLIC else PRIVATE, configuration.description, configuration.extendsConfigs.map(_.name), configuration.transitive, null)
     }
   def addExtraNamespace(dmd: DefaultModuleDescriptor): Unit =
     dmd.addExtraAttributeNamespace("e", "http://ant.apache.org/ivy/extra")
@@ -414,26 +416,31 @@ private[sbt] object IvySbt {
   def toID(m: ModuleID) =
     {
       import m._
-      ModuleRevisionId.newInstance(organization, name, branchName.orNull, revision, javaMap(extraAttributes))
+      ModuleRevisionId.newInstance(organization, name, branchName.orNull, revision, javaMap(extraAttributes.asScala))
     }
 
   private def substituteCross(m: ModuleSettings): ModuleSettings =
-    m.ivyScala match {
+    m2o(m.ivyScala) match {
       case None     => m
       case Some(is) => substituteCross(m, is.scalaFullVersion, is.scalaBinaryVersion)
     }
   private def substituteCross(m: ModuleSettings, scalaFullVersion: String, scalaBinaryVersion: String): ModuleSettings =
     {
-      val sub = CrossVersion(scalaFullVersion, scalaBinaryVersion)
+      import scala.collection.JavaConverters._
+      val sub = CrossVersionUtil(scalaFullVersion, scalaBinaryVersion)
       m match {
-        case ic: InlineConfiguration => ic.copy(module = sub(ic.module), dependencies = ic.dependencies map sub, overrides = ic.overrides map sub)
-        case _                       => m
+        case ic: InlineConfiguration =>
+          ic.withModule(sub(ic.module))
+            .withDependencies(ic.dependencies map sub)
+            .withOverrides(ic.overrides.asScala.map(sub).asJava)
+        case _ =>
+          m
       }
     }
 
-  private def toIvyArtifact(moduleID: ModuleDescriptor, a: Artifact, allConfigurations: Iterable[String]): MDArtifact =
+  private def toIvyArtifact(moduleID: ModuleDescriptor, a: Artifact, allConfigurations: Array[String]): MDArtifact =
     {
-      val artifact = new MDArtifact(moduleID, a.name, a.`type`, a.extension, null, extra(a, false))
+      val artifact = new MDArtifact(moduleID, a.name, a.tpe, a.extension, null, extra(a, false))
       copyConfigurations(a, artifact.addConfiguration, allConfigurations)
       artifact
     }
@@ -444,13 +451,24 @@ private[sbt] object IvySbt {
     }
   private[sbt] def extra(artifact: Artifact, unqualify: Boolean = false): java.util.Map[String, String] =
     {
-      val ea = artifact.classifier match { case Some(c) => artifact.extra("e:classifier" -> c); case None => artifact }
+      val ea = m2o(artifact.classifier) match {
+        case Some(c) =>
+          // TODO: What happens if we want to override a value?
+          val newAttrs = new java.util.HashMap[String, String]()
+          newAttrs.put("e:classifier", c)
+          newAttrs.putAll(artifact.extraAttributes)
+          artifact.withExtraAttributes(newAttrs)
+        case None =>
+          artifact
+      }
+
       javaMap(ea.extraAttributes, unqualify)
     }
-  private[sbt] def javaMap(m: Map[String, String], unqualify: Boolean = false) =
+  private[sbt] def javaMap(m: Map[String, String], unqualify: Boolean = false): java.util.Map[String, String] =
     {
+      import scala.collection.JavaConverters._
       val map = if (unqualify) m map { case (k, v) => (k.stripPrefix("e:"), v) } else m
-      if (map.isEmpty) null else scala.collection.JavaConversions.mapAsJavaMap(map)
+      if (map.isEmpty) null else map.asJava
     }
 
   /** Creates a full ivy file for 'module' using the 'dependencies' XML as the part after the &lt;info&gt;...&lt;/info&gt; section. */
@@ -591,30 +609,30 @@ private[sbt] object IvySbt {
           parser.parseDepsConfs(confs, dependencyDescriptor)
       }
       for (artifact <- dependency.explicitArtifacts) {
-        import artifact.{ name, `type`, extension, url }
+        import artifact.{ name, tpe, extension, url }
         val extraMap = extra(artifact)
-        val ivyArtifact = new DefaultDependencyArtifactDescriptor(dependencyDescriptor, name, `type`, extension, url.orNull, extraMap)
+        val ivyArtifact = new DefaultDependencyArtifactDescriptor(dependencyDescriptor, name, tpe, extension, m2o(url).orNull, extraMap)
         copyConfigurations(artifact, ivyArtifact.addConfiguration)
         for (conf <- dependencyDescriptor.getModuleConfigurations)
           dependencyDescriptor.addDependencyArtifact(conf, ivyArtifact)
       }
       for (excls <- dependency.exclusions) {
         for (conf <- dependencyDescriptor.getModuleConfigurations) {
-          dependencyDescriptor.addExcludeRule(conf, IvyScala.excludeRule(excls.organization, excls.name, excls.configurations, excls.artifact))
+          dependencyDescriptor.addExcludeRule(conf, IvyScalaUtil.excludeRule(excls.organization, excls.name, excls.configurations, excls.artifact))
         }
       }
       for (incls <- dependency.inclusions) {
         for (conf <- dependencyDescriptor.getModuleConfigurations) {
-          dependencyDescriptor.addIncludeRule(conf, IvyScala.includeRule(incls.organization, incls.name, incls.configurations, incls.artifact))
+          dependencyDescriptor.addIncludeRule(conf, IvyScalaUtil.includeRule(incls.organization, incls.name, incls.configurations, incls.artifact))
         }
       }
 
       dependencyDescriptor
     }
   def copyConfigurations(artifact: Artifact, addConfiguration: String => Unit): Unit =
-    copyConfigurations(artifact, addConfiguration, "*" :: Nil)
+    copyConfigurations(artifact, addConfiguration, Array("*"))
 
-  private[this] def copyConfigurations(artifact: Artifact, addConfiguration: String => Unit, allConfigurations: Iterable[String]): Unit =
+  private[this] def copyConfigurations(artifact: Artifact, addConfiguration: String => Unit, allConfigurations: Array[String]): Unit =
     {
       val confs = if (artifact.configurations.isEmpty) allConfigurations else artifact.configurations.map(_.name)
       confs foreach addConfiguration
@@ -625,11 +643,11 @@ private[sbt] object IvySbt {
   def addExclude(moduleID: DefaultModuleDescriptor, ivyScala: Option[IvyScala])(exclude0: SbtExclusionRule): Unit =
     {
       // this adds _2.11 postfix
-      val exclude = CrossVersion.substituteCross(exclude0, ivyScala)
+      val exclude = CrossVersionUtil.substituteCross(exclude0, ivyScala)
       val confs =
-        if (exclude.configurations.isEmpty) moduleID.getConfigurationsNames.toList
+        if (exclude.configurations.isEmpty) moduleID.getConfigurationsNames
         else exclude.configurations
-      val excludeRule = IvyScala.excludeRule(exclude.organization, exclude.name, confs, exclude.artifact)
+      val excludeRule = IvyScalaUtil.excludeRule(exclude.organization, exclude.name, confs, exclude.artifact)
       moduleID.addExcludeRule(excludeRule)
     }
 

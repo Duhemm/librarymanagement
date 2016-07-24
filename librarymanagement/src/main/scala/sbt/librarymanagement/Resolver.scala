@@ -9,168 +9,164 @@ import scala.xml.XML
 import org.apache.ivy.plugins.resolver.DependencyResolver
 import org.xml.sax.SAXParseException
 
-sealed trait Resolver {
-  def name: String
-}
-final class RawRepository(val resolver: DependencyResolver) extends Resolver {
-  def name = resolver.getName
-  override def toString = "Raw(" + resolver.toString + ")"
+// sealed trait Resolver {
+//   def name: String
+// }
+// final class RawRepository(val resolver: DependencyResolver) extends Resolver {
+//   def name = resolver.getName
+//   override def toString = "Raw(" + resolver.toString + ")"
 
-  override def equals(o: Any): Boolean = o match {
-    case o: RawRepository =>
-      this.name == o.name
-    case _ => false
-  }
+//   override def equals(o: Any): Boolean = o match {
+//     case o: RawRepository =>
+//       this.name == o.name
+//     case _ => false
+//   }
 
-  override def hashCode: Int =
-    {
-      var hash = 1
-      hash = hash * 31 + this.name.##
-      hash
-    }
-}
-sealed case class ChainedResolver(name: String, resolvers: Seq[Resolver]) extends Resolver
+//   override def hashCode: Int =
+//     {
+//       var hash = 1
+//       hash = hash * 31 + this.name.##
+//       hash
+//     }
+// }
+// sealed case class ChainedResolver(name: String, resolvers: Seq[Resolver]) extends Resolver
 
 /** An instance of a remote maven repository.  Note:  This will use Aether/Maven to resolve artifacts. */
-sealed case class MavenRepository(name: String, root: String, localIfFile: Boolean = true) extends Resolver {
-  override def toString = s"$name: $root"
-  def isCache: Boolean = false
-  def withLocalIfFile(value: Boolean) = MavenRepository(name, root, value)
-}
+// sealed case class MavenRepository(name: String, root: String, localIfFile: Boolean = true) extends Resolver {
+//   override def toString = s"$name: $root"
+//   def isCache: Boolean = false
+//   def withLocalIfFile(value: Boolean) = MavenRepository(name, root, value)
+// }
 
 /**
  * An instance of maven CACHE directory.  You cannot treat a cache directory the same as a a remote repository because
  * the metadata is different (see Aether ML discussion).
  */
-final class MavenCache(name: String, val rootFile: File) extends MavenRepository(name, rootFile.toURI.toURL.toString) {
-  override val toString = s"cache:$name: ${rootFile.getAbsolutePath}"
-  override def isCache: Boolean = true
-}
-object MavenCache {
-  def apply(name: String, rootFile: File): MavenCache = new MavenCache(name, rootFile)
-}
+// final class MavenCache(name: String, val rootFile: File) extends MavenRepository(name, rootFile.toURI.toURL.toString) {
+//   override val toString = s"cache:$name: ${rootFile.getAbsolutePath}"
+//   override def isCache: Boolean = true
+// }
+// object MavenCache {
+//   def apply(name: String, rootFile: File): MavenCache = new MavenCache(name, rootFile)
+// }
 
-final class Patterns(val ivyPatterns: Seq[String], val artifactPatterns: Seq[String], val isMavenCompatible: Boolean, val descriptorOptional: Boolean, val skipConsistencyCheck: Boolean) {
-  private[sbt] def mavenStyle(): Patterns = Patterns(ivyPatterns, artifactPatterns, true)
-  private[sbt] def withDescriptorOptional(): Patterns = Patterns(ivyPatterns, artifactPatterns, isMavenCompatible, true, skipConsistencyCheck)
-  private[sbt] def withoutConsistencyCheck(): Patterns = Patterns(ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, true)
-  private[sbt] def withIvys(patterns: Seq[String]): Patterns = Patterns(patterns ++ ivyPatterns, artifactPatterns, isMavenCompatible)
-  private[sbt] def withArtifacts(patterns: Seq[String]): Patterns = Patterns(ivyPatterns, patterns ++ artifactPatterns, isMavenCompatible)
-  override def toString = "Patterns(ivyPatterns=%s, artifactPatterns=%s, isMavenCompatible=%s, descriptorOptional=%s, skipConsistencyCheck=%s)".format(ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, skipConsistencyCheck)
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case other: Patterns =>
-        ivyPatterns == other.ivyPatterns && artifactPatterns == other.artifactPatterns && isMavenCompatible == other.isMavenCompatible && descriptorOptional == other.descriptorOptional && skipConsistencyCheck == other.skipConsistencyCheck
-      case _ => false
-    }
-  }
-  override def hashCode: Int = (ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, skipConsistencyCheck).hashCode
-}
-object Patterns {
-  implicit def defaultPatterns: Patterns = Resolver.defaultPatterns
+// final class Patterns(val ivyPatterns: Seq[String], val artifactPatterns: Seq[String], val isMavenCompatible: Boolean, val descriptorOptional: Boolean, val skipConsistencyCheck: Boolean) {
+//   private[sbt] def mavenStyle(): Patterns = Patterns(ivyPatterns, artifactPatterns, true)
+//   private[sbt] def withDescriptorOptional(): Patterns = Patterns(ivyPatterns, artifactPatterns, isMavenCompatible, true, skipConsistencyCheck)
+//   private[sbt] def withoutConsistencyCheck(): Patterns = Patterns(ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, true)
+//   private[sbt] def withIvys(patterns: Seq[String]): Patterns = Patterns(patterns ++ ivyPatterns, artifactPatterns, isMavenCompatible)
+//   private[sbt] def withArtifacts(patterns: Seq[String]): Patterns = Patterns(ivyPatterns, patterns ++ artifactPatterns, isMavenCompatible)
+//   override def toString = "Patterns(ivyPatterns=%s, artifactPatterns=%s, isMavenCompatible=%s, descriptorOptional=%s, skipConsistencyCheck=%s)".format(ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, skipConsistencyCheck)
+//   override def equals(obj: Any): Boolean = {
+//     obj match {
+//       case other: Patterns =>
+//         ivyPatterns == other.ivyPatterns && artifactPatterns == other.artifactPatterns && isMavenCompatible == other.isMavenCompatible && descriptorOptional == other.descriptorOptional && skipConsistencyCheck == other.skipConsistencyCheck
+//       case _ => false
+//     }
+//   }
+//   override def hashCode: Int = (ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, skipConsistencyCheck).hashCode
+// }
+// object Patterns {
+//   implicit def defaultPatterns: Patterns = Resolver.defaultPatterns
 
-  def apply(artifactPatterns: String*): Patterns = Patterns(true, artifactPatterns: _*)
-  def apply(isMavenCompatible: Boolean, artifactPatterns: String*): Patterns = Patterns(artifactPatterns, artifactPatterns, isMavenCompatible)
-  def apply(ivyPatterns: Seq[String], artifactPatterns: Seq[String], isMavenCompatible: Boolean): Patterns = apply(ivyPatterns: Seq[String], artifactPatterns: Seq[String], isMavenCompatible: Boolean, false, false)
-  def apply(ivyPatterns: Seq[String], artifactPatterns: Seq[String], isMavenCompatible: Boolean, descriptorOptional: Boolean, skipConsistencyCheck: Boolean): Patterns = new Patterns(ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, skipConsistencyCheck)
-}
+//   def apply(artifactPatterns: String*): Patterns = Patterns(true, artifactPatterns: _*)
+//   def apply(isMavenCompatible: Boolean, artifactPatterns: String*): Patterns = Patterns(artifactPatterns, artifactPatterns, isMavenCompatible)
+//   def apply(ivyPatterns: Seq[String], artifactPatterns: Seq[String], isMavenCompatible: Boolean): Patterns = apply(ivyPatterns: Seq[String], artifactPatterns: Seq[String], isMavenCompatible: Boolean, false, false)
+//   def apply(ivyPatterns: Seq[String], artifactPatterns: Seq[String], isMavenCompatible: Boolean, descriptorOptional: Boolean, skipConsistencyCheck: Boolean): Patterns = new Patterns(ivyPatterns, artifactPatterns, isMavenCompatible, descriptorOptional, skipConsistencyCheck)
+// }
 object RepositoryHelpers {
-  final case class SshConnection(authentication: Option[SshAuthentication], hostname: Option[String], port: Option[Int]) {
-    def copy(authentication: Option[SshAuthentication]) = SshConnection(authentication, hostname, port)
-  }
+  // final case class SshConnection(authentication: Option[SshAuthentication], hostname: Option[String], port: Option[Int]) {
+  //   def copy(authentication: Option[SshAuthentication]) = SshConnection(authentication, hostname, port)
+  // }
   /** Configuration specific to an Ivy filesystem resolver. */
-  final case class FileConfiguration(isLocal: Boolean, isTransactional: Option[Boolean]) {
-    def transactional() = FileConfiguration(isLocal, Some(true))
-    def nontransactional() = FileConfiguration(isLocal, Some(false))
-    def nonlocal() = FileConfiguration(false, isTransactional)
-  }
-  sealed trait SshAuthentication
-  final case class PasswordAuthentication(user: String, password: Option[String]) extends SshAuthentication
-  final case class KeyFileAuthentication(user: String, keyfile: File, password: Option[String]) extends SshAuthentication
+  // final case class FileConfiguration(isLocal: Boolean, isTransactional: Option[Boolean]) {
+  //   def transactional() = FileConfiguration(isLocal, Some(true))
+  //   def nontransactional() = FileConfiguration(isLocal, Some(false))
+  //   def nonlocal() = FileConfiguration(false, isTransactional)
+  // }
+  // sealed trait SshAuthentication
+  // final case class PasswordAuthentication(user: String, password: Option[String]) extends SshAuthentication
+  // final case class KeyFileAuthentication(user: String, keyfile: File, password: Option[String]) extends SshAuthentication
 }
-import RepositoryHelpers.{ SshConnection, FileConfiguration }
-import RepositoryHelpers.{ KeyFileAuthentication, PasswordAuthentication, SshAuthentication }
 
 /** sbt interface to an Ivy repository based on patterns, which is most Ivy repositories.*/
-sealed abstract class PatternsBasedRepository extends Resolver {
-  type RepositoryType <: PatternsBasedRepository
-  /** Should be implemented to create a new copy of this repository but with `patterns` as given.*/
-  protected def copy(patterns: Patterns): RepositoryType
+// sealed abstract class PatternsBasedRepository extends Resolver {
+//   type RepositoryType <: PatternsBasedRepository
+//   /** Should be implemented to create a new copy of this repository but with `patterns` as given.*/
+//   protected def copy(patterns: Patterns): RepositoryType
 
-  /** The object representing the configured patterns for this repository. */
-  def patterns: Patterns
+//   /** The object representing the configured patterns for this repository. */
+//   def patterns: Patterns
 
-  /** Enables maven 2 compatibility for this repository. */
-  def mavenStyle() = copy(patterns.mavenStyle())
+//   /** Enables maven 2 compatibility for this repository. */
+//   def mavenStyle() = copy(patterns.mavenStyle())
 
-  /** Makes descriptor metadata optional for this repository. */
-  def descriptorOptional() = copy(patterns.withDescriptorOptional())
+//   /** Makes descriptor metadata optional for this repository. */
+//   def descriptorOptional() = copy(patterns.withDescriptorOptional())
 
-  /** Disables consistency checking for this repository. */
-  def skipConsistencyCheck() = copy(patterns.withoutConsistencyCheck())
+//   /** Disables consistency checking for this repository. */
+//   def skipConsistencyCheck() = copy(patterns.withoutConsistencyCheck())
 
-  /** Adds the given patterns for resolving/publishing Ivy files.*/
-  def ivys(ivyPatterns: String*): RepositoryType = copy(patterns.withIvys(ivyPatterns))
-  /** Adds the given patterns for resolving/publishing artifacts.*/
-  def artifacts(artifactPatterns: String*): RepositoryType = copy(patterns.withArtifacts(artifactPatterns))
-}
-/** sbt interface for an Ivy filesystem repository.  More convenient construction is done using Resolver.file.  */
-final case class FileRepository(name: String, configuration: FileConfiguration, patterns: Patterns) extends PatternsBasedRepository {
-  type RepositoryType = FileRepository
-  protected def copy(patterns: Patterns): FileRepository = FileRepository(name, configuration, patterns)
-  private def copy(configuration: FileConfiguration) = FileRepository(name, configuration, patterns)
-  def transactional() = copy(configuration.transactional())
-  def nonlocal() = copy(configuration.nonlocal())
-}
-final case class URLRepository(name: String, patterns: Patterns) extends PatternsBasedRepository {
-  type RepositoryType = URLRepository
-  protected def copy(patterns: Patterns): URLRepository = URLRepository(name, patterns)
-}
-/** sbt interface for an Ivy ssh-based repository (ssh and sftp).  Requires the Jsch library.. */
-sealed abstract class SshBasedRepository extends PatternsBasedRepository {
-  type RepositoryType <: SshBasedRepository
-  protected def copy(connection: SshConnection): RepositoryType
-  private def copy(authentication: SshAuthentication): RepositoryType = copy(connection.copy(Some(authentication)))
+//   /** Adds the given patterns for resolving/publishing Ivy files.*/
+//   def ivys(ivyPatterns: String*): RepositoryType = copy(patterns.withIvys(ivyPatterns))
+//   /** Adds the given patterns for resolving/publishing artifacts.*/
+//   def artifacts(artifactPatterns: String*): RepositoryType = copy(patterns.withArtifacts(artifactPatterns))
+// }
+// /** sbt interface for an Ivy filesystem repository.  More convenient construction is done using Resolver.file.  */
+// final case class FileRepository(name: String, configuration: FileConfiguration, patterns: Patterns) extends PatternsBasedRepository {
+//   type RepositoryType = FileRepository
+//   protected def copy(patterns: Patterns): FileRepository = FileRepository(name, configuration, patterns)
+//   private def copy(configuration: FileConfiguration) = FileRepository(name, configuration, patterns)
+//   def transactional() = copy(configuration.transactional())
+//   def nonlocal() = copy(configuration.nonlocal())
+// }
+// final case class URLRepository(name: String, patterns: Patterns) extends PatternsBasedRepository {
+//   type RepositoryType = URLRepository
+//   protected def copy(patterns: Patterns): URLRepository = URLRepository(name, patterns)
+// }
+// /** sbt interface for an Ivy ssh-based repository (ssh and sftp).  Requires the Jsch library.. */
+// sealed abstract class SshBasedRepository extends PatternsBasedRepository {
+//   type RepositoryType <: SshBasedRepository
+//   protected def copy(connection: SshConnection): RepositoryType
+//   private def copy(authentication: SshAuthentication): RepositoryType = copy(connection.copy(Some(authentication)))
 
-  /** The object representing the configured ssh connection for this repository. */
-  def connection: SshConnection
+//   /** The object representing the configured ssh connection for this repository. */
+//   def connection: SshConnection
 
-  /** Configures this to use the specified user name and password when connecting to the remote repository. */
-  def as(user: String, password: String): RepositoryType = as(user, Some(password))
-  def as(user: String): RepositoryType = as(user, None)
-  def as(user: String, password: Option[String]) = copy(new PasswordAuthentication(user, password))
-  /** Configures this to use the specified keyfile and password for the keyfile when connecting to the remote repository. */
-  def as(user: String, keyfile: File): RepositoryType = as(user, keyfile, None)
-  def as(user: String, keyfile: File, password: String): RepositoryType = as(user, keyfile, Some(password))
-  def as(user: String, keyfile: File, password: Option[String]): RepositoryType = copy(new KeyFileAuthentication(user, keyfile, password))
-}
-/** sbt interface for an Ivy repository over ssh.  More convenient construction is done using Resolver.ssh.  */
-final case class SshRepository(name: String, connection: SshConnection, patterns: Patterns, publishPermissions: Option[String]) extends SshBasedRepository {
-  type RepositoryType = SshRepository
-  protected def copy(patterns: Patterns): SshRepository = SshRepository(name, connection, patterns, publishPermissions)
-  protected def copy(connection: SshConnection): SshRepository = SshRepository(name, connection, patterns, publishPermissions)
-  /** Defines the permissions to set when publishing to this repository. */
-  def withPermissions(publishPermissions: String): SshRepository = withPermissions(Some(publishPermissions))
-  def withPermissions(publishPermissions: Option[String]): SshRepository = SshRepository(name, connection, patterns, publishPermissions)
-}
-/** sbt interface for an Ivy repository over sftp.  More convenient construction is done using Resolver.sftp.  */
-final case class SftpRepository(name: String, connection: SshConnection, patterns: Patterns) extends SshBasedRepository {
-  type RepositoryType = SftpRepository
-  protected def copy(patterns: Patterns): SftpRepository = SftpRepository(name, connection, patterns)
-  protected def copy(connection: SshConnection): SftpRepository = SftpRepository(name, connection, patterns)
-}
+//   /** Configures this to use the specified user name and password when connecting to the remote repository. */
+//   def as(user: String, password: String): RepositoryType = as(user, Some(password))
+//   def as(user: String): RepositoryType = as(user, None)
+//   def as(user: String, password: Option[String]) = copy(new PasswordAuthentication(user, password))
+//   /** Configures this to use the specified keyfile and password for the keyfile when connecting to the remote repository. */
+//   def as(user: String, keyfile: File): RepositoryType = as(user, keyfile, None)
+//   def as(user: String, keyfile: File, password: String): RepositoryType = as(user, keyfile, Some(password))
+//   def as(user: String, keyfile: File, password: Option[String]): RepositoryType = copy(new KeyFileAuthentication(user, keyfile, password))
+// }
+// /** sbt interface for an Ivy repository over ssh.  More convenient construction is done using Resolver.ssh.  */
+// final case class SshRepository(name: String, connection: SshConnection, patterns: Patterns, publishPermissions: Option[String]) extends SshBasedRepository {
+//   type RepositoryType = SshRepository
+//   protected def copy(patterns: Patterns): SshRepository = SshRepository(name, connection, patterns, publishPermissions)
+//   protected def copy(connection: SshConnection): SshRepository = SshRepository(name, connection, patterns, publishPermissions)
+//   /** Defines the permissions to set when publishing to this repository. */
+//   def withPermissions(publishPermissions: String): SshRepository = withPermissions(Some(publishPermissions))
+//   def withPermissions(publishPermissions: Option[String]): SshRepository = SshRepository(name, connection, patterns, publishPermissions)
+// }
+// /** sbt interface for an Ivy repository over sftp.  More convenient construction is done using Resolver.sftp.  */
+// final case class SftpRepository(name: String, connection: SshConnection, patterns: Patterns) extends SshBasedRepository {
+//   type RepositoryType = SftpRepository
+//   protected def copy(patterns: Patterns): SftpRepository = SftpRepository(name, connection, patterns)
+//   protected def copy(connection: SshConnection): SftpRepository = SftpRepository(name, connection, patterns)
+// }
 /** A repository that conforms to sbt launcher's interface */
 private[sbt] class FakeRepository(resolver: DependencyResolver) extends xsbti.Repository {
   def rawRepository = new RawRepository(resolver)
 }
 
-import Resolver._
-
 object DefaultMavenRepository extends MavenRepository("public", centralRepositoryRoot(useSecureResolvers))
 object JavaNet2Repository extends MavenRepository(JavaNet2RepositoryName, JavaNet2RepositoryRoot)
 object JCenterRepository extends MavenRepository(JCenterRepositoryName, JCenterRepositoryRoot)
 
-object Resolver {
+object ResolverUtil {
   private[sbt] def useSecureResolvers = sys.props.get("sbt.repository.secure") map { _.toLowerCase == "true" } getOrElse true
 
   val TypesafeRepositoryRoot = typesafeRepositoryRoot(useSecureResolvers)
@@ -347,8 +343,8 @@ object Resolver {
       val normBase = base.replace('\\', '/')
       if (normBase.endsWith("/") || pattern.startsWith("/")) normBase + pattern else normBase + "/" + pattern
     }
-  def defaultFileConfiguration = FileConfiguration(true, None)
-  def mavenStylePatterns = Patterns(Nil, mavenStyleBasePattern :: Nil, true)
+  def defaultFileConfiguration = new FileConfiguration(true, xsbti.Maybe.nothing[Boolean])
+  def mavenStylePatterns = new Patterns(Nil, mavenStyleBasePattern :: Nil, true)
   def ivyStylePatterns = defaultIvyPatterns //Patterns(Nil, Nil, false)
 
   def defaultPatterns = mavenStylePatterns
@@ -384,11 +380,11 @@ object Resolver {
   def defaultUserFileRepository(id: String) =
     {
       val pList = s"$${ivy.home}/$id/$localBasePattern" :: Nil
-      FileRepository(id, defaultFileConfiguration, Patterns(pList, pList, false))
+      new FileRepository(defaultFileConfiguration, new Patterns(pList, pList, false), id)
     }
   def defaultIvyPatterns =
     {
       val pList = List(localBasePattern)
-      Patterns(pList, pList, false)
+      new Patterns(pList, pList, false, false, false)
     }
 }

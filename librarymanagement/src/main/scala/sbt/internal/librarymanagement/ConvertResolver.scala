@@ -117,7 +117,7 @@ private[sbt] object ConvertResolver {
       r match {
         case repo: MavenRepository =>
           {
-            val pattern = Collections.singletonList(Resolver.resolvePattern(repo.root, Resolver.mavenStyleBasePattern))
+            val pattern = Collections.singletonList(ResolverUtil.resolvePattern(repo.root, ResolverUtil.mavenStyleBasePattern))
             final class PluginCapableResolver extends IBiblioResolver with ChecksumFriendlyURLResolver with DescriptorRequired {
               def setPatterns(): Unit = {
                 // done this way for access to protected methods.
@@ -135,7 +135,9 @@ private[sbt] object ConvertResolver {
           {
             val resolver = new SshResolver with DescriptorRequired
             initializeSSHResolver(resolver, repo, settings)
-            repo.publishPermissions.foreach(perm => resolver.setPublishPermissions(perm))
+            if (repo.publishPermissions.isDefined) {
+              resolver.setPublishPermissions(repo.publishPermissions.get)
+            }
             resolver
           }
         case repo: SftpRepository =>
@@ -155,9 +157,10 @@ private[sbt] object ConvertResolver {
             }
             resolver.setName(repo.name)
             initializePatterns(resolver, repo.patterns, settings)
-            import repo.configuration.{ isLocal, isTransactional }
-            resolver.setLocal(isLocal)
-            isTransactional.foreach(value => resolver.setTransactional(value.toString))
+            resolver.setLocal(repo.configuration.isLocal)
+            if (repo.configuration.isTransactional.isDefined) {
+              resolver.setTransactional(repo.configuration.isTransactional.get.toString)
+            }
             resolver
           }
         case repo: URLRepository =>
@@ -195,21 +198,28 @@ private[sbt] object ConvertResolver {
     initializePatterns(resolver, repo.patterns, settings)
     initializeConnection(resolver, repo.connection)
   }
-  private def initializeConnection(resolver: AbstractSshBasedResolver, connection: RepositoryHelpers.SshConnection): Unit = {
-    import resolver._
-    import connection._
-    hostname.foreach(setHost)
-    port.foreach(setPort)
-    authentication foreach
-      {
-        case RepositoryHelpers.PasswordAuthentication(user, password) =>
-          setUser(user)
-          password.foreach(setUserPassword)
-        case RepositoryHelpers.KeyFileAuthentication(user, file, password) =>
-          setKeyFile(file)
-          password.foreach(setKeyFilePassword)
-          setUser(user)
+  private def initializeConnection(resolver: AbstractSshBasedResolver, connection: SshConnection): Unit = {
+    if (connection.hostname.isDefined) {
+      resolver.setHost(connection.hostname.get)
+    }
+    if (connection.port.isDefined) {
+      resolver.setPort(connection.port.get)
+    }
+    if (connection.authentication.isDefined) {
+      connection.authentication.get match {
+        case pa: PasswordAuthentication =>
+          resolver.setUser(pa.user)
+          if (pa.password.isDefined) {
+            resolver.setUserPassword(pa.password.get)
+          }
+        case kfa: KeyFileAuthentication =>
+          resolver.setKeyFile(kfa.keyfile)
+          if (kfa.password.isDefined) {
+            resolver.setKeyFilePassword(kfa.password.get)
+          }
+          resolver.setUser(kfa.user)
       }
+    }
   }
   private def initializePatterns(resolver: AbstractPatternsBasedResolver, patterns: Patterns, settings: IvySettings): Unit = {
     resolver.setM2compatible(patterns.isMavenCompatible)

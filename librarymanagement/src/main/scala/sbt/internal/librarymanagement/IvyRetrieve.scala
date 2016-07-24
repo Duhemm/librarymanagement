@@ -16,6 +16,9 @@ import ivyint.SbtDefaultDependencyDescriptor
 import sbt.librarymanagement._
 import sbt.internal.librarymanagement.syntax._
 
+import xsbti.T2
+import sbt.util.InterfaceUtil.{ t2, o2m }
+
 object IvyRetrieve {
   def reports(report: ResolveReport): Seq[ConfigurationResolveReport] =
     report.getConfigurations map report.getConfigurationReport
@@ -29,22 +32,22 @@ object IvyRetrieve {
   def artifactReports(mid: ModuleID, artReport: Seq[ArtifactDownloadReport]): ModuleReport =
     {
       val (resolved, missing) = artifacts(mid, artReport)
-      ModuleReport(mid, resolved, missing)
+      new ModuleReport(mid, resolved, missing)
     }
 
-  private[sbt] def artifacts(mid: ModuleID, artReport: Seq[ArtifactDownloadReport]): (Seq[(Artifact, File)], Seq[Artifact]) =
+  private[sbt] def artifacts(mid: ModuleID, artReport: Seq[ArtifactDownloadReport]): (Array[T2[Artifact, File]], Array[Artifact]) =
     {
       val missing = new mutable.ListBuffer[Artifact]
-      val resolved = new mutable.ListBuffer[(Artifact, File)]
+      val resolved = new mutable.ListBuffer[T2[Artifact, File]]
       for (r <- artReport) {
         val fileOpt = Option(r.getLocalFile)
         val art = toArtifact(r.getArtifact)
         fileOpt match {
-          case Some(file) => resolved += ((art, file))
+          case Some(file) => resolved += (t2((art, file)))
           case None       => missing += art
         }
       }
-      (resolved.toSeq, missing.toSeq)
+      (resolved.toArray, missing.toArray)
     }
 
   // We need this because current module report used as part of UpdateReport/ConfigurationReport contains
@@ -53,8 +56,8 @@ object IvyRetrieve {
   private[sbt] def organizationArtifactReports(confReport: ConfigurationResolveReport): Seq[OrganizationArtifactReport] = {
     val moduleIds = confReport.getModuleIds.toArray.toVector collect { case mId: IvyModuleId => mId }
     def organizationArtifact(mid: IvyModuleId): OrganizationArtifactReport = {
-      val deps = confReport.getNodes(mid).toArray.toVector collect { case node: IvyNode => node }
-      OrganizationArtifactReport(mid.getOrganisation, mid.getName, deps map { moduleRevisionDetail(confReport, _) })
+      val deps = confReport.getNodes(mid).toArray collect { case node: IvyNode => node }
+      new OrganizationArtifactReport(mid.getOrganisation, mid.getName, deps map { moduleRevisionDetail(confReport, _) })
     }
     moduleIds map { organizationArtifact }
   }
@@ -67,14 +70,16 @@ object IvyRetrieve {
     }
 
   private[sbt] def moduleRevisionDetail(confReport: ConfigurationResolveReport, dep: IvyNode): ModuleReport = {
+    import scala.collection.JavaConverters._
     def toExtraAttributes(ea: ju.Map[_, _]): Map[String, String] =
       Map(ea.entrySet.toArray collect {
         case entry: ju.Map.Entry[_, _] if nonEmptyString(entry.getKey.toString).isDefined && nonEmptyString(entry.getValue.toString).isDefined =>
           (entry.getKey.toString, entry.getValue.toString)
       }: _*)
     def toCaller(caller: IvyCaller): Caller = {
+      import scala.collection.JavaConverters._
       val m = toModuleID(caller.getModuleRevisionId)
-      val callerConfigurations = caller.getCallerConfigurations.toVector collect {
+      val callerConfigurations = caller.getCallerConfigurations collect {
         case x if nonEmptyString(x).isDefined => x
       }
       val ddOpt = Option(caller.getDependencyDescriptor)
@@ -85,7 +90,7 @@ object IvyRetrieve {
         case Some(dd) => (toExtraAttributes(dd.getExtraAttributes), dd.isForce, dd.isChanging, dd.isTransitive, false)
         case None     => (Map.empty[String, String], false, false, true, false)
       }
-      new Caller(m, callerConfigurations, extraAttributes, isForce, isChanging, isTransitive, isDirectlyForce)
+      new Caller(m, callerConfigurations, extraAttributes.asJava, isForce, isChanging, isTransitive, isDirectlyForce)
     }
     val revId = dep.getResolvedId
     val moduleId = toModuleID(revId)
@@ -130,20 +135,20 @@ object IvyRetrieve {
       case _        => dep.getResolvedId.getExtraAttributes
     })
     val isDefault = Option(dep.getDescriptor) map { _.isDefault }
-    val configurations = dep.getConfigurations(confReport.getConfiguration).toList
-    val licenses: Seq[(String, Option[String])] = mdOpt match {
-      case Some(md) => md.getLicenses.toVector collect {
+    val configurations = dep.getConfigurations(confReport.getConfiguration)
+    val licenses: Array[T2[String, xsbti.Maybe[String]]] = mdOpt match {
+      case Some(md) => md.getLicenses collect {
         case lic: IvyLicense if Option(lic.getName).isDefined =>
           val temporaryURL = "http://localhost"
-          (lic.getName, nonEmptyString(lic.getUrl) orElse { Some(temporaryURL) })
+          t2((lic.getName, o2m(nonEmptyString(lic.getUrl) orElse { Some(temporaryURL) })))
       }
-      case _ => Nil
+      case _ => Array.empty
     }
-    val callers = dep.getCallers(confReport.getConfiguration).toVector map { toCaller }
+    val callers = dep.getCallers(confReport.getConfiguration) map { toCaller }
     val (resolved, missing) = artifacts(moduleId, confReport getDownloadReports revId)
 
-    new ModuleReport(moduleId, resolved, missing, status, publicationDate, resolver, artifactResolver,
-      evicted, evictedData, evictedReason, problem, homepage, extraAttributes, isDefault, branch,
+    new ModuleReport(moduleId, resolved, missing, o2m(status), o2m(publicationDate), o2m(resolver), o2m(artifactResolver),
+      evicted, o2m(evictedData), o2m(evictedReason), o2m(problem), o2m(homepage), extraAttributes.asJava, o2m(isDefault), o2m(branch),
       configurations, licenses, callers)
   }
 
@@ -157,7 +162,7 @@ object IvyRetrieve {
   def toArtifact(art: IvyArtifact): Artifact =
     {
       import art._
-      Artifact(getName, getType, getExt, Option(getExtraAttribute("classifier")), getConfigurations map Configurations.config, Option(getUrl))
+      new Artifact(getName, getType, getExt, Option(getExtraAttribute("classifier")), getConfigurations map Configurations.config, Option(getUrl))
     }
 
   def updateReport(report: ResolveReport, cachedDescriptor: File): UpdateReport =

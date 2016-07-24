@@ -44,7 +44,7 @@ private[sbt] object JsonUtil {
     })
   // #1763/#2030. Caller takes up 97% of space, so we need to shrink it down,
   // but there are semantics associated with some of them.
-  def filterOutArtificialCallers(callers: Seq[Caller]): Seq[Caller] =
+  def filterOutArtificialCallers(callers: Array[Caller]): Array[Caller] =
     if (callers.isEmpty) callers
     else {
       val nonArtificial = callers filter { c =>
@@ -53,8 +53,8 @@ private[sbt] object JsonUtil {
       }
       val interProj = (callers find { c =>
         c.caller.organization == sbtOrgTemp
-      }).toList
-      interProj ::: nonArtificial.toList
+      }).toArray
+      interProj ++ nonArtificial
     }
 
   def fromLite(lite: UpdateReportLite, cachedDescriptor: File): UpdateReport =
@@ -73,12 +73,9 @@ private[sbt] object JsonUtil {
     }
 }
 
-private[sbt] case class UpdateReportLite(configurations: Seq[ConfigurationReportLite])
-private[sbt] object UpdateReportLite {
-  implicit val pickler: Pickler[UpdateReportLite] with Unpickler[UpdateReportLite] = PicklerUnpickler.generate[UpdateReportLite]
-}
+// private[sbt] case class UpdateReportLite(configurations: Seq[ConfigurationReportLite])
+// private[sbt] object UpdateReportLite {
+//   implicit val pickler: Pickler[UpdateReportLite] with Unpickler[UpdateReportLite] = PicklerUnpickler.generate[UpdateReportLite]
+// }
 
-private[sbt] case class ConfigurationReportLite(configuration: String, details: Seq[OrganizationArtifactReport])
-private[sbt] object ConfigurationReportLite {
-  implicit val pickler: Pickler[ConfigurationReportLite] with Unpickler[ConfigurationReportLite] = PicklerUnpickler.generate[ConfigurationReportLite]
-}
+// private[sbt] case class ConfigurationReportLite(configuration: String, details: Seq[OrganizationArtifactReport])

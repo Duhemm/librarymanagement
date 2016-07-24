@@ -44,9 +44,9 @@ object SbtArtifacts {
 
 import ScalaArtifacts._
 
-final case class IvyScala(scalaFullVersion: String, scalaBinaryVersion: String, configurations: Iterable[Configuration], checkExplicit: Boolean, filterImplicit: Boolean, overrideScalaVersion: Boolean, scalaOrganization: String = ScalaArtifacts.Organization)
+// final case class IvyScala(scalaFullVersion: String, scalaBinaryVersion: String, configurations: Iterable[Configuration], checkExplicit: Boolean, filterImplicit: Boolean, overrideScalaVersion: Boolean, scalaOrganization: String = ScalaArtifacts.Organization)
 
-private[sbt] object IvyScala {
+private[sbt] object IvyScalaUtil {
   /** Performs checks/adds filters on Scala dependencies (if enabled in IvyScala). */
   def checkModule(module: DefaultModuleDescriptor, conf: String, log: Logger)(check: IvyScala): Unit = {
     if (check.checkExplicit)

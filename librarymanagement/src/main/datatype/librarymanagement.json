@@ -1,0 +1,1019 @@
+{
+	"types": [
+		{
+			"name": "Caller",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "caller",
+					"type": "sbt.librarymanagement.ModuleID"
+				},
+				{
+					"name": "callerConfigurations",
+					"type": "String*"
+				},
+				{
+					"name": "callerExtraAttributes",
+					"type": "java.util.Map<String, String>"
+				},
+				{
+					"name": "isForceDependency",
+					"type": "Boolean"
+				},
+				{
+					"name": "isChangingDependency",
+					"type": "Boolean"
+				},
+				{
+					"name": "isTransitiveDependency",
+					"type": "Boolean"
+				},
+				{
+					"name": "isDirectlyForceDependency",
+					"type": "Boolean"
+				}
+			]
+		},
+		{
+			"name": "ModuleReport",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "module",
+					"type": "sbt.librarymanagement.ModuleID"
+				},
+				{
+					"name": "artifacts",
+					"type": "xsbti.T2<sbt.librarymanagement.Artifact, java.io.File>*"
+				},
+				{
+					"name": "missingArtifacts",
+					"type": "sbt.librarymanagement.Artifact*"
+				},
+				{
+					"name": "status",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "publicationDate",
+					"type": "xsbti.Maybe<java.util.Date>"
+				},
+				{
+					"name": "resolver",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "artifactResolver",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "evicted",
+					"type": "Boolean"
+				},
+				{
+					"name": "evictedData",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "evictedReason",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "problem",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "homepage",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "extraAttributes",
+					"type": "java.util.Map<String, String>"
+				},
+				{
+					"name": "isDefault",
+					"type": "xsbti.Maybe<Boolean>"
+				},
+				{
+					"name": "branch",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "configurations",
+					"type": "String*"
+				},
+				{
+					"name": "licenses",
+					"type": "xsbti.T2<String, xsbti.Maybe<String>>*"
+				},
+				{
+					"name": "callers",
+					"type": "sbt.librarymanagement.Caller*"
+				}
+			]
+		},
+		{
+			"name": "OrganizationArtifactReport",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "organization",
+					"type": "String"
+				},
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "modules",
+					"type": "sbt.librarymanagement.ModuleReport*"
+				}
+			]
+		},
+		{
+			"name": "UpdateStats",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "resolveTime",
+					"type": "Long"
+				},
+				{
+					"name": "downloadTime",
+					"type": "Long"
+				},
+				{
+					"name": "downloadSize",
+					"type": "Long"
+				},
+				{
+					"name": "cached",
+					"type": "Boolean"
+				}
+			]
+		},
+		{
+			"name": "UpdateLogging",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "enumeration",
+			"doc": [
+				"Configures logging during an 'update'.  `level` determines the amount of other information logged.",
+				"`Full` is the default and logs the most.",
+				"`DownloadOnly` only logs what is downloaded.",
+				"`Quiet` only displays errors.",
+				"`Default` uses the current log level of `update` task."
+			],
+			"symbols": [
+				"Full",
+				"DownloadOnly",
+				"Quiet",
+				"Default"
+			]
+		},
+		{
+			"name": "RetrieveConfiguration",
+			"namespace": "sbt.internal.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "retrieveDirectory",
+					"type": "java.io.File"
+				},
+				{
+					"name": "outputPattern",
+					"type": "String"
+				},
+				{
+					"name": "sync",
+					"type": "Boolean"
+				},
+				{
+					"name": "configurationsToRetrieve",
+					"type": "xsbti.Maybe<java.util.Set<sbt.librarymanagement.Configuration>>"
+				}
+			]
+		},
+		{
+			"name": "UpdateConfiguration",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "retrieve",
+					"type": "xsbti.Maybe<sbt.internal.librarymanagement.RetrieveConfiguration>"
+				},
+				{
+					"name": "missingOk",
+					"type": "Boolean"
+				},
+				{
+					"name": "logging",
+					"type": "sbt.librarymanagement.UpdateLogging"
+				},
+				{
+					"name": "artifactFilter",
+					"type": "sbt.librarymanagement.ArtifactTypeFilter"
+				}
+			]
+		},
+		{
+			"name": "ScmInfo",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"doc": "Basic SCM information for a project module",
+			"fields": [
+				{
+					"name": "browseUrl",
+					"type": "java.net.URL"
+				},
+				{
+					"name": "connection",
+					"type": "String"
+				},
+				{
+					"name": "devConnection",
+					"type": "xsbti.Maybe<String>"
+				}
+			]
+		},
+		{
+			"name": "Developer",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "id",
+					"type": "String"
+				},
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "email",
+					"type": "String"
+				},
+				{
+					"name": "url",
+					"type": "java.net.URL"
+				}
+			]
+		},
+		{
+			"name": "SbtExclusionRule",
+			"namespace": "sbt.internal.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "organization",
+					"type": "String"
+				},
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "artifact",
+					"type": "String"
+				},
+				{
+					"name": "configurations",
+					"type": "String*"
+				},
+				{
+					"name": "crossVersion",
+					"type": "sbt.librarymanagement.CrossVersion"
+				}
+			]
+		},
+		{
+			"name": "ModuleInfo",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"doc": "Additional information about a project module",
+			"fields": [
+				{
+					"name": "nameFormal",
+					"type": "String"
+				},
+				{
+					"name": "description",
+					"type": "String"
+				},
+				{
+					"name": "homepage",
+					"type": "xsbti.Maybe<java.net.URL>"
+				},
+				{
+					"name": "startYear",
+					"type": "xsbti.Maybe<Integer>"
+				},
+				{
+					"name": "licenses",
+					"type": "xsbti.T2<String, java.net.URL>*"
+				},
+				{
+					"name": "organizationName",
+					"type": "String"
+				},
+				{
+					"name": "organizationHomepage",
+					"type": "xsbti.Maybe<java.net.URL>"
+				},
+				{
+					"name": "scmInfo",
+					"type": "xsbti.Maybe<sbt.librarymanagement.ScmInfo>"
+				},
+				{
+					"name": "developers",
+					"type": "Developer*"
+				}
+			]
+		},
+		{
+			"name": "ConflictManager",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "organization",
+					"type": "String"
+				},
+				{
+					"name": "module",
+					"type": "String"
+				}
+			]
+		},
+		{
+			"name": "IvyScala",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "scalaFullVersion",
+					"type": "String"
+				},
+				{
+					"name": "scalaBinaryVersion",
+					"type": "String"
+				},
+				{
+					"name": "configurations",
+					"type": "sbt.librarymanagement.Configuration*"
+				},
+				{
+					"name": "checkExplicit",
+					"type": "Boolean"
+				},
+				{
+					"name": "filterImplicit",
+					"type": "Boolean"
+				},
+				{
+					"name": "overrideScalaVersion",
+					"type": "Boolean"
+				},
+				{
+					"name": "scalaOrganization",
+					"type": "String"
+				}
+			]
+		},
+		{
+			"name": "ModuleSettings",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "interface",
+			"fields": [
+				{
+					"name": "validate",
+					"type": "Boolean"
+				},
+				{
+					"name": "ivyScala",
+					"type": "xsbti.Maybe<sbt.librarymanagement.IvyScala>"
+				}
+			],
+			"types": [
+				{
+					"name": "IvyFileConfiguration",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "file",
+							"type": "java.io.File"
+						},
+						{
+							"name": "autoScalaTools",
+							"type": "Boolean"
+						}
+					]
+				},
+				{
+					"name": "PomConfiguration",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "file",
+							"type": "java.io.File"
+						},
+						{
+							"name": "autoScalaTools",
+							"type": "Boolean"
+						}
+					]
+				},
+				{
+					"name": "InlineConfiguration",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "module",
+							"type": "sbt.librarymanagement.ModuleID"
+						},
+						{
+							"name": "moduleInfo",
+							"type": "sbt.librarymanagement.ModuleInfo"
+						},
+						{
+							"name": "dependencies",
+							"type": "sbt.librarymanagement.ModuleID*"
+						},
+						{
+							"name": "overrides",
+							"type": "java.util.Set<sbt.librarymanagement.ModuleID>"
+						},
+						{
+							"name": "excludes",
+							"type": "sbt.internal.librarymanagement.SbtExclusionRule*"
+						},
+						{
+							"name": "ivyXML",
+							"type": "scala.xml.NodeSeq"
+						},
+						{
+							"name": "configurations",
+							"type": "sbt.librarymanagement.Configuration*"
+						},
+						{
+							"name": "defaultConfiguration",
+							"type": "xsbti.Maybe<sbt.librarymanagement.Configuration>"
+						},
+						{
+							"name": "conflictManager",
+							"type": "sbt.librarymanagement.ConflictManager"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "IvyPaths",
+			"namespace": "sbt.internal.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "baseDirectory",
+					"type": "java.io.File"
+				},
+				{
+					"name": "ivyHome",
+					"type": "xsbti.Maybe<java.io.File>"
+				}
+			]
+		},
+		{
+			"name": "InclExclRule",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "organization",
+					"type": "String"
+				},
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "artifact",
+					"type": "String"
+				},
+				{
+					"name": "configurations",
+					"type": "String*"
+				}
+			]
+		},
+		{
+			"name": "CrossVersion",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "interface",
+			"doc": "Configures how a module will be cross-versioned.",
+			"types": [
+				{
+					"name": "Disabled",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"doc": "Disables cross versioning for a module.",
+					"type": "record"
+				},
+				{
+					"name": "Binary",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"doc": [
+						"Cross-versions a module using the result of applying `remapVersion` to the binary version.",
+						"For example, if `remapVersion = v => \"2.10\"` and the binary version is \"2.9.2\" or \"2.10\",",
+						"the module is cross-versioned with \"2.10\"."
+					],
+					"type": "record",
+					"fields": [
+						{
+							"name": "remapVersion",
+							"type": "xsbti.F1<String, String>"
+						}
+					]
+				},
+				{
+					"name": "Full",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"doc": [
+						"Cross-versions a module with the result of applying `remapVersion` to the full version.",
+						"For example, if `remapVersion = v => \"2.10\"` and the full version is \"2.9.2\" or \"2.10.3\",",
+						"the module is cross-versioned with \"2.10\"."
+					],
+					"fields": [
+						{
+							"name": "remapVersion",
+							"type": "xsbti.F1<String, String>"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Configuration",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"doc": "Represents an Ivy configuration.",
+			"fields": [
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "description",
+					"type": "String",
+					"default": "\"\"",
+					"since": "1.0.0"
+				},
+				{
+					"name": "isPublic",
+					"type": "Boolean",
+					"default": "true",
+					"since": "1.0.0"
+				},
+				{
+					"name": "extendsConfigs",
+					"type": "sbt.librarymanagement.Configuration*",
+					"default": "new sbt.librarymanagement.Configuration[0]",
+					"since": "1.0.0"
+				},
+				{
+					"name": "transitive",
+					"type": "Boolean",
+					"default": "true",
+					"since": "1.0.0"
+				}
+			]
+		},
+		{
+			"name": "Artifact",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "tpe",
+					"type": "String"
+				},
+				{
+					"name": "extension",
+					"type": "String"
+				},
+				{
+					"name": "classifier",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "configurations",
+					"type": "sbt.librarymanagement.Configuration*"
+				},
+				{
+					"name": "url",
+					"type": "xsbti.Maybe<java.net.URL>"
+				},
+				{
+					"name": "extraAttributes",
+					"type": "java.util.Map<String, String>"
+				}
+			]
+		},
+		{
+			"name": "SshAuthentication",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "interface",
+			"types": [
+				{
+					"name": "PasswordAuthentication",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "user",
+							"type": "String"
+						},
+						{
+							"name": "password",
+							"type": "xsbti.Maybe<String>"
+						}
+					]
+				},
+				{
+					"name": "KeyFileAuthentication",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "user",
+							"type": "String"
+						},
+						{
+							"name": "keyfile",
+							"type": "java.io.File"
+						},
+						{
+							"name": "password",
+							"type": "xsbti.Maybe<String>"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "SshConnection",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "authentication",
+					"type": "xsbti.Maybe<sbt.librarymanagement.SshAuthentication>"
+				},
+				{
+					"name": "hostname",
+					"type": "xsbti.Maybe<String>"
+				},
+				{
+					"name": "port",
+					"type": "xsbti.Maybe<Integer>"
+				}
+			]
+		},
+		{
+			"name": "FileConfiguration",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "isLocal",
+					"type": "Boolean"
+				},
+				{
+					"name": "isTransactional",
+					"type": "xsbti.Maybe<Boolean>"
+				}
+			]
+		},
+		{
+			"name": "Patterns",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "ivyPatterns",
+					"type": "String*"
+				},
+				{
+					"name": "artifactPatterns",
+					"type": "String*"
+				},
+				{
+					"name": "isMavenCompatible",
+					"type": "Boolean"
+				},
+				{
+					"name": "descriptorOptional",
+					"type": "Boolean"
+				},
+				{
+					"name": "skipConsistencyCheck",
+					"type": "Boolean"
+				}
+			]
+		},
+		{
+			"name": "Resolver",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "interface",
+			"fields": [
+				{
+					"name": "name",
+					"type": "String"
+				}
+			],
+			"types": [
+				{
+					"name": "RawRepository",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "resolver",
+							"type": "org.apache.ivy.plugins.resolver.DependencyResolver"
+						}
+					]
+				},
+				{
+					"name": "ChainedResolver",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "resolvers",
+							"type": "sbt.librarymanagement.Resolver*"
+						}
+					]
+				},
+				{
+					"name": "MavenRepository",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"doc": "An instance of a remote maven repository.  Note:  This will use Aether/Maven to resolve artifacts.",
+					"fields": [
+						{
+							"name": "root",
+							"type": "String"
+						},
+						{
+							"name": "localIfFile",
+							"type": "Boolean"
+						}
+					]
+				},
+				{
+					"name": "MavenCache",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"doc": [
+						"An instance of maven CACHE directory.  You cannot treat a cache directory the same as a a remote repository because",
+						"the metadata is different (see Aether ML discussion)."
+					],
+					"fields": [
+						{
+							"name": "rootFile",
+							"type": "java.io.File"
+						}
+					]
+				},
+				{
+					"name": "PatternsBasedRepository",
+					"namespace": "sbt.librarymanagement",
+					"target": "Java",
+					"type": "interface",
+					"fields": [
+						{
+							"name": "patterns",
+							"type": "sbt.librarymanagement.Patterns"
+						}
+					],
+					"types": [
+						{
+							"name": "FileRepository",
+							"namespace": "sbt.librarymanagement",
+							"target": "Java",
+							"type": "record",
+							"fields": [
+								{
+									"name": "configuration",
+									"type": "FileConfiguration"
+								}
+							]
+						},
+						{
+							"name": "URLRepository",
+							"namespace": "sbt.librarymanagement",
+							"target": "Java",
+							"type": "record"
+						},
+						{
+							"name": "SshBasedRepository",
+							"namespace": "sbt.librarymanagement",
+							"target": "Java",
+							"type": "interface",
+							"fields": [
+								{
+									"name": "connection",
+									"type": "SshConnection"
+								},
+								{
+									"name": "publishPermissions",
+									"type": "xsbti.Maybe<String>"
+								}
+							],
+							"types": [
+								{
+									"name": "SshRepository",
+									"namespace": "sbt.librarymanagement",
+									"target": "Java",
+									"type": "record"
+								},
+								{
+									"name": "SftpRepository",
+									"namespace": "sbt.librarymanagement",
+									"target": "Java",
+									"type": "record"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "ModuleConfiguration",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "organization",
+					"type": "String"
+				},
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "revision",
+					"type": "String"
+				},
+				{
+					"name": "resolver",
+					"type": "Resolver"
+				}
+			]
+		},
+		{
+			"name": "IvyConfiguration",
+			"namespace": "sbt.internal.librarymanagement",
+			"target": "Java",
+			"type": "interface",
+			"fields": [
+				{
+					"name": "lock",
+					"type": "xsbti.Maybe<xsbti.GlobalLock>"
+				},
+				{
+					"name": "baseDirectory",
+					"type": "java.io.File"
+				},
+				{
+					"name": "log",
+					"type": "xsbti.Logger"
+				},
+				{
+					"name": "updateOptions",
+					"type": "sbt.librarymanagement.UpdateOptions"
+				}
+			],
+			"types": [
+				{
+					"name": "InlineIvyConfiguration",
+					"namespace": "sbt.internal.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "paths",
+							"type": "sbt.internal.librarymanagement.IvyPaths"
+						},
+						{
+							"name": "resolvers",
+							"type": "sbt.librarymanagement.Resolver*"
+						},
+						{
+							"name": "otherResolvers",
+							"type": "sbt.librarymanagement.Resolver*"
+						},
+						{
+							"name": "moduleConfigurations",
+							"type": "sbt.librarymanagement.ModuleConfiguration*"
+						},
+						{
+							"name": "localOnly",
+							"type": "Boolean"
+						},
+						{
+							"name": "checksums",
+							"type": "String*"
+						},
+						{
+							"name": "resolutionCacheDir",
+							"type": "xsbti.Maybe<java.io.File>"
+						}
+					]
+				},
+				{
+					"name": "ExternalIvyConfiguration",
+					"namespace": "sbt.internal.librarymanagement",
+					"target": "Java",
+					"type": "record",
+					"fields": [
+						{
+							"name": "uri",
+							"type": "java.net.URI"
+						},
+						{
+							"name": "extraResolvers",
+							"type": "sbt.librarymanagement.Resolver*"
+						}
+					]
+				}
+			]
+		}
+	]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -13,7 +13,10 @@ trait DependencyFilterExtra {
     }
   def artifactFilter(name: NameFilter = AllPassFilter, `type`: NameFilter = AllPassFilter, extension: NameFilter = AllPassFilter, classifier: NameFilter = AllPassFilter): ArtifactFilter =
     new ArtifactFilter {
-      def apply(a: Artifact): Boolean = name.accept(a.name) && `type`.accept(a.`type`) && extension.accept(a.extension) && classifier.accept(a.classifier getOrElse "")
+      def apply(a: Artifact): Boolean = {
+        val artClassifier = if (a.classifier.isDefined) a.classifier.get else ""
+        name.accept(a.name) && `type`.accept(a.tpe) && extension.accept(a.extension) && classifier.accept(artClassifier)
+      }
     }
   def configurationFilter(name: NameFilter = AllPassFilter): ConfigurationFilter =
     new ConfigurationFilter {

@@ -27,39 +27,50 @@ final class RichUpdateReport(report: UpdateReport) {
     matching(DependencyFilter.make(configuration, module, artifact))
 
   private[this] def select0(f: DependencyFilter): Seq[File] =
-    for (cReport <- report.configurations; mReport <- cReport.modules; (artifact, file) <- mReport.artifacts if f(cReport.configuration, mReport.module, artifact)) yield {
-      if (file == null) sys.error("Null file: conf=" + cReport.configuration + ", module=" + mReport.module + ", art: " + artifact)
-      file
+    for {
+      cReport <- report.configurations
+      mReport <- cReport.modules
+      artFile <- mReport.artifacts
+      if f(cReport.configuration, mReport.module, artFile.get1)
+    } yield {
+      if (artFile.get2 == null) sys.error("Null file: conf=" + cReport.configuration + ", module=" + mReport.module + ", art: " + artFile.get1)
+      artFile
     }
 
   /** Constructs a new report that only contains files matching the specified filter.*/
   private[sbt] def filter(f: DependencyFilter): UpdateReport =
     moduleReportMap { (configuration, modReport) =>
-      modReport.copy(
-        artifacts = modReport.artifacts filter { case (art, file) => f(configuration, modReport.module, art) },
-        missingArtifacts = modReport.missingArtifacts filter { art => f(configuration, modReport.module, art) }
-      )
+      modReport.withArtifacts(modReport.artifacts filter { a => f(configuration, modReport.module, art.get1) })
+        .withMissingArtifacts(modReport.missingArtifacts filter { a => f(configuration, modReport.module, a) })
     }
   def substitute(f: (String, ModuleID, Seq[(Artifact, File)]) => Seq[(Artifact, File)]): UpdateReport =
     moduleReportMap { (configuration, modReport) =>
       val newArtifacts = f(configuration, modReport.module, modReport.artifacts)
-      modReport.copy(
-        artifacts = newArtifacts,
-        missingArtifacts = modReport.missingArtifacts
-      )
+      modReport.withArtifacts(newArtifacts)
+      // modReport.copy(
+      //   artifacts = newArtifacts,
+      //   missingArtifacts = modReport.missingArtifacts
+      // )
     }
 
   def toSeq: Seq[(String, ModuleID, Artifact, File)] =
-    for (confReport <- report.configurations; modReport <- confReport.modules; (artifact, file) <- modReport.artifacts) yield (confReport.configuration, modReport.module, artifact, file)
+    for {
+      confReport <- report.configurations
+      modReport <- confReport.modules
+      artFile <- modReport.artifacts
+      artifact = artFile.get1
+      file = artFile.get2
+    } yield (confReport.configuration, modReport.module, artifact, file)
 
   def allMissing: Seq[(String, ModuleID, Artifact)] =
     for (confReport <- report.configurations; modReport <- confReport.modules; artifact <- modReport.missingArtifacts) yield (confReport.configuration, modReport.module, artifact)
 
   def addMissing(f: ModuleID => Seq[Artifact]): UpdateReport =
     moduleReportMap { (configuration, modReport) =>
-      modReport.copy(
-        missingArtifacts = (modReport.missingArtifacts ++ f(modReport.module)).distinct
-      )
+      modReport.withMissingArtifacts((modReport.missingArtifacts ++ f(modReport.module)).distinct)
+      // modReport.copy(
+      //   missingArtifacts = (modReport.missingArtifacts ++ f(modReport.module)).distinct
+      // )
     }
 
   def moduleReportMap(f: (String, ModuleReport) => ModuleReport): UpdateReport =

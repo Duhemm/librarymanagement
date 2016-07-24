@@ -51,7 +51,8 @@ lazy val lm = (project in file("librarymanagement")).
       utilCollection, utilCompletion, ivy, jsch, sbtSerialization, scalaReflect.value, launcherInterface),
     resourceGenerators in Compile <+= (version, resourceManaged, streams, compile in Compile) map Util.generateVersionFile,
     binaryIssueFilters ++= Seq()
-  )
+  ).
+  enablePlugins(DatatypePlugin)
 
 def customCommands: Seq[Setting[_]] = Seq(
   commands += Command.command("release") { state =>

@@ -15,6 +15,8 @@ import sbt.io.Path
 import sbt.util.Logger
 import sbt.librarymanagement._
 
+import sbt.util.InterfaceUtil.o2m
+
 class NotInCache(val id: ModuleID, cause: Throwable)
   extends RuntimeException(NotInCache(id, cause), cause) {
   def this(id: ModuleID) = this(id, null)
@@ -79,8 +81,8 @@ class IvyCache(val ivyHome: Option[File]) {
   /** A minimal Ivy setup with only a local resolver and the current directory as the base directory.*/
   private def basicLocalIvy(lock: Option[xsbti.GlobalLock], log: Logger) =
     {
-      val local = Resolver.defaultLocal
-      val paths = new IvyPaths(new File("."), ivyHome)
+      val local = ResolverUtil.defaultLocal
+      val paths = new IvyPaths(new File("."), o2m(ivyHome))
       val conf = new InlineIvyConfiguration(paths, Seq(local), Nil, Nil, false, lock, IvySbt.DefaultChecksums, None, UpdateOptions(), log)
       (new IvySbt(conf), local)
     }
