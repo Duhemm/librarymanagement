@@ -5,8 +5,6 @@ import sbt.util.{ Level, Logger }
 
 import Configurations._
 
-import sbt.util.InterfaceUtil.m2o
-
 final class CompatibilityWarningOptions private[sbt] (
   val configurations: Seq[Configuration],
   val level: Level.Value
@@ -37,13 +35,11 @@ private[sbt] object CompatibilityWarning {
       case x: InlineConfiguration => x.dependencies
       case _                      => Seq()
     }
-    def inMonitoredConfigs(configOpt: Option[String]): Boolean =
-      configOpt match {
-        case Some(c) => (c.split(",").toSet intersect monitoredConfigsStr).nonEmpty
-        case None    => monitoredConfigsStr contains "compile"
-      }
+    def inMonitoredConfigs(configOpt: xsbti.Maybe[String]): Boolean =
+      if (configOpt.isDefined) (configOpt.get.split(",").toSet intersect monitoredConfigsStr).nonEmpty
+      else monitoredConfigsStr contains "compile"
     directDependencies foreach { m =>
-      if (!m.isTransitive && inMonitoredConfigs(m2o(m.configurations))) {
+      if (!m.isTransitive && inMonitoredConfigs(m.configurations)) {
         log.warn(
           s"""Found intransitive dependency ($m) while publishMavenStyle is true, but Maven repositories
              |  do not support intransitive dependencies. Use exclusions instead so transitive dependencies
