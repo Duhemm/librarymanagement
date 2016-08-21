@@ -357,7 +357,7 @@
 				},
 				{
 					"name": "startYear",
-					"type": "xsbti.Maybe<Integer>",
+					"type": "xsbti.Maybe<java.lang.Integer>",
 					"default": "xsbti.Maybe.nothing()",
 					"since": "0.1"
 				},
@@ -796,7 +796,7 @@
 				},
 				{
 					"name": "port",
-					"type": "xsbti.Maybe<Integer>"
+					"type": "xsbti.Maybe<java.lang.Integer>"
 				}
 			]
 		},
@@ -1235,17 +1235,3 @@
 		}
 	]
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
