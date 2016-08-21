@@ -21,6 +21,7 @@ import sbt.util.Logger
 import sbt.internal.util.{ ShowLines, SourcePosition, LinePosition, RangePosition, LineRange }
 import sbt.librarymanagement._
 import sbt.internal.librarymanagement.syntax._
+import ArtifactTypeFilterUtil.toIvyFilter
 
 import sbt.util.InterfaceUtil.{ m2o, o2m }
 
@@ -236,9 +237,9 @@ object IvyActions {
     uwconfig: UnresolvedWarningConfiguration, logicalClock: LogicalClock, depDir: Option[File], log: Logger): UpdateReport =
     {
       import config.{ configuration => c, ivyScala, module => mod }
-      import mod.id
-      val base = restrictedCopy(id, true).copy(name = id.name + "$" + label)
-      val module = new ivySbt.Module(new InlineConfiguration(base, new ModuleInfo(base.name), deps).withIvyScala(ivyScala))
+      import mod.{ id, modules => deps }
+      val base = restrictedCopy(id, true).withName(id.name + "$" + label)
+      val module = new ivySbt.Module(new InlineConfiguration(false, xsbti.Maybe.nothing(), base, new ModuleInfo(base.name), deps.toArray).withIvyScala(o2m(ivyScala)))
       val report = updateEither(module, c, uwconfig, logicalClock, depDir, log) match {
         case Right(r) => r
         case Left(w) =>
@@ -268,12 +269,12 @@ object IvyActions {
       import config.{ configuration => c, module => mod, _ }
       import mod.{ configurations => confs, _ }
       assert(classifiers.nonEmpty, "classifiers cannot be empty")
-      assert(c.artifactFilter.types.nonEmpty, "UpdateConfiguration must filter on some types")
+      assert(!c.artifactFilter.types.isEmpty, "UpdateConfiguration must filter on some types")
       val baseModules = modules map { m => restrictedCopy(m, true) }
       // Adding list of explicit artifacts here.
       val deps = baseModules.distinct flatMap classifiedArtifacts(classifiers, exclude, artifacts)
-      val base = restrictedCopy(id, true).copy(name = id.name + classifiers.mkString("$", "_", ""))
-      val module = new ivySbt.Module(new InlineConfiguration(base, new ModuleInfo(base.name), deps).withIvyScala(ivyScala).withConfigurations(confs))
+      val base = restrictedCopy(id, true).withName(id.name + classifiers.mkString("$", "_", ""))
+      val module = new ivySbt.Module(new InlineConfiguration(false, xsbti.Maybe.nothing(), base, new ModuleInfo(base.name), deps.toArray).withIvyScala(o2m(ivyScala)).withConfigurations(confs.toArray))
       // c.copy ensures c.types is preserved too
       val upConf = c.withMissingOk(true)
       updateEither(module, upConf, uwconfig, logicalClock, depDir, log) match {
@@ -333,7 +334,10 @@ object IvyActions {
    * `usage.getDependencyIncludesSet` returns null if there are no (explicit) include rules.
    */
   private def intransitiveModuleWithExplicitArts(module: ModuleID, arts: Seq[Artifact]): ModuleID =
-    module.copy(isTransitive = false, explicitArtifacts = arts, inclusions = InclExclRuleUtil.everything :: Nil)
+    module.withIsTransitive(false)
+      .withExplicitArtifacts(arts.toArray)
+      .withInclusions(Array(InclExclRuleUtil.everything))
+  // module.copy(isTransitive = false, explicitArtifacts = arts, inclusions = InclExclRuleUtil.everything :: Nil)
 
   def addExcluded(report: UpdateReport, classifiers: Seq[String], exclude: Map[ModuleID, Set[String]]): UpdateReport =
     report.addMissing { id => classifiedArtifacts(id.name, classifiers filter getExcluded(id, exclude)) }
@@ -346,8 +350,21 @@ object IvyActions {
     report.allMissing flatMap { case (_, mod, art) => m2o(art.classifier).map { c => (restrictedCopy(mod, false), c) } } groupBy (_._1) map { case (mod, pairs) => (mod, pairs.map(_._2).toSet) }
 
   private[this] def restrictedCopy(m: ModuleID, confs: Boolean) =
-    ModuleID(m.organization, m.name, m.revision, crossVersion = m.crossVersion, extraAttributes = m.extraAttributes, configurations = if (confs) m.configurations else None)
-      .branch(m.branchName)
+    new ModuleID(
+      /* organization = */ m.organization,
+      /* name = */ m.name,
+      /* revision = */ m.revision,
+      /* configurations = */ if (confs) m.configurations else xsbti.Maybe.nothing[String](),
+      /* isChanging = */ false,
+      /* isTransitive = */ true,
+      /* isForce = */ false,
+      /* explicitArtifacts = */ Array.empty,
+      /* inclusions = */ Array.empty,
+      /* exclusions = */ Array.empty,
+      /* extraAttributes = */ m.extraAttributes,
+      /* crossVersion = */ m.crossVersion,
+      /* branchName = */ m.branchName
+    )
 
   private[this] def resolve(logging: UpdateLogging)(ivy: Ivy, module: DefaultModuleDescriptor, defaultConf: String, filter: ArtifactTypeFilter): (ResolveReport, Option[ResolveException]) =
     {
@@ -417,9 +434,10 @@ object IvyActions {
 
   private def substitute(conf: String, mid: ModuleID, art: Artifact, pattern: String): String =
     {
-      val mextra = IvySbt.javaMap(mid.extraAttributes, true)
+      import scala.collection.JavaConverters._
+      val mextra = IvySbt.javaMap(mid.extraAttributes.asScala.toMap, true)
       val aextra = IvySbt.extra(art, true)
-      IvyPatternHelper.substitute(pattern, mid.organization, mid.name, mid.branchName.orNull, mid.revision, art.name, art.tpe, art.extension, conf, null, mextra, aextra)
+      IvyPatternHelper.substitute(pattern, mid.organization, mid.name, m2o(mid.branchName).orNull, mid.revision, art.name, art.tpe, art.extension, conf, null, mextra, aextra)
     }
 
   import UpdateLogging.{ Quiet, Full, DownloadOnly, Default }
@@ -471,6 +489,7 @@ final class UnresolvedWarning private[sbt] (
   val failedPaths: Seq[Seq[(ModuleID, Option[SourcePosition])]]
 )
 object UnresolvedWarning {
+  import ShowLines._
   private[sbt] def apply(err: ResolveException, config: UnresolvedWarningConfiguration): UnresolvedWarning = {
     def modulePosition(m0: ModuleID): Option[SourcePosition] =
       config.modulePositions.find {
@@ -508,10 +527,10 @@ object UnresolvedWarning {
       a.failedPaths foreach { path =>
         if (path.nonEmpty) {
           val head = path.head
-          buffer += "\t\t" + head._1.toString + sourcePosStr(head._2)
+          buffer += "\t\t" + head._1.lines.mkString + sourcePosStr(head._2)
           path.tail foreach {
             case (m, pos) =>
-              buffer += "\t\t  +- " + m.toString + sourcePosStr(pos)
+              buffer += "\t\t  +- " + m.lines.mkString + sourcePosStr(pos)
           }
         }
       }

@@ -5,15 +5,29 @@ package sbt.librarymanagement
 
 import java.io.File
 import java.net.URL
-import sbt.serialization._
 
 // final case class Artifact(name: String, `type`: String, extension: String, classifier: Option[String], configurations: Iterable[Configuration], url: Option[URL], extraAttributes: Map[String, String]) {
 //   def extra(attributes: (String, String)*) = copy(extraAttributes = extraAttributes ++ ModuleID.checkE(attributes))
 // }
 
-import Configurations.{ Optional, Pom, Test }
+import Configurations.Pom
 
-import sbt.util.InterfaceUtil.m2o
+import sbt.util.InterfaceUtil.{ m2o, o2m }
+
+object MakeArtifact {
+
+  import ArtifactUtil._
+  import scala.collection.JavaConverters._
+
+  def apply(name: String): Artifact = MakeArtifact(name, DefaultType, DefaultExtension, None, Nil, None)
+  def apply(name: String, extra: Map[String, String]): Artifact = MakeArtifact(name, DefaultType, DefaultExtension, None, Nil, None).withExtraAttributes(extra.asJava)
+  def apply(name: String, classifier: String): Artifact = MakeArtifact(name, DefaultType, DefaultExtension, Some(classifier), Nil, None)
+  def apply(name: String, `type`: String, extension: String): Artifact = MakeArtifact(name, `type`, extension, None, Nil, None)
+  def apply(name: String, `type`: String, extension: String, classifier: String): Artifact = MakeArtifact(name, `type`, extension, Some(classifier), Nil, None)
+  def apply(name: String, url: URL): Artifact = MakeArtifact(name, extract(url, DefaultType), extract(url, DefaultExtension), None, Nil, Some(url))
+  def apply(name: String, `type`: String, extension: String, classifier: Option[String], configurations: Iterable[Configuration], url: Option[URL]): Artifact =
+    new Artifact(name, `type`, extension, o2m(classifier), configurations.toArray, o2m(url), new java.util.HashMap[String, String]())
+}
 
 object ArtifactUtil {
   // def apply(name: String): Artifact = Artifact(name, DefaultType, DefaultExtension, None, Nil, None)
@@ -30,7 +44,7 @@ object ArtifactUtil {
 
   def sources(name: String) = classified(name, SourceClassifier)
   def javadoc(name: String) = classified(name, DocClassifier)
-  def pom(name: String) = new Artifact(name, PomType, PomType, None, Pom :: Nil, None)
+  def pom(name: String) = new Artifact(name, PomType, PomType, xsbti.Maybe.nothing[String](), Array(Pom), xsbti.Maybe.nothing[URL](), new java.util.HashMap[String, String]())
 
   // Possible ivy artifact types such that sbt will treat those artifacts at sources / docs
   val DefaultSourceTypes = Set("src", "source", "sources")
@@ -64,14 +78,14 @@ object ArtifactUtil {
       val name = file.getName
       val i = name.lastIndexOf('.')
       val base = if (i >= 0) name.substring(0, i) else name
-      new Artifact(base, extract(name, DefaultType), extract(name, DefaultExtension), None, Nil, Some(file.toURI.toURL))
+      new Artifact(base, extract(name, DefaultType), extract(name, DefaultExtension), xsbti.Maybe.nothing[String](), Array.empty, xsbti.Maybe.just(file.toURI.toURL), new java.util.HashMap[String, String]())
     }
   def artifactName(scalaVersion: ScalaVersion, module: ModuleID, artifact: Artifact): String =
     {
       import artifact._
       val classifierStr = m2o(classifier) match { case None => ""; case Some(c) => "-" + c }
       val cross = CrossVersionUtil(module.crossVersion, scalaVersion.full, scalaVersion.binary)
-      val base = CrossVersion.applyCross(artifact.name, cross)
+      val base = CrossVersionUtil.applyCross(artifact.name, cross)
       base + "-" + module.revision + classifierStr + "." + artifact.extension
     }
 
@@ -84,6 +98,6 @@ object ArtifactUtil {
    * The artifact is created under the default configuration.
    */
   def classified(name: String, classifier: String): Artifact =
-    new Artifact(name, classifierType(classifier), DefaultExtension, Some(classifier), Nil, None)
+    new Artifact(name, classifierType(classifier), DefaultExtension, xsbti.Maybe.just(classifier), Array.empty, xsbti.Maybe.nothing[URL](), new java.util.HashMap[String, String]())
 
 }

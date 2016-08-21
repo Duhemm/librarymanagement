@@ -4,6 +4,7 @@ package librarymanagement
 
 import java.io.File
 import sbt.librarymanagement._
+import sbt.util.InterfaceUtil.t2
 
 /** Provides extra methods for filtering the contents of an `UpdateReport` and for obtaining references to a selected subset of the underlying files. */
 final class RichUpdateReport(report: UpdateReport) {
@@ -34,18 +35,25 @@ final class RichUpdateReport(report: UpdateReport) {
       if f(cReport.configuration, mReport.module, artFile.get1)
     } yield {
       if (artFile.get2 == null) sys.error("Null file: conf=" + cReport.configuration + ", module=" + mReport.module + ", art: " + artFile.get1)
-      artFile
+      artFile.get2
     }
 
   /** Constructs a new report that only contains files matching the specified filter.*/
   private[sbt] def filter(f: DependencyFilter): UpdateReport =
     moduleReportMap { (configuration, modReport) =>
-      modReport.withArtifacts(modReport.artifacts filter { a => f(configuration, modReport.module, art.get1) })
+      modReport.withArtifacts(modReport.artifacts filter { a => f(configuration, modReport.module, a.get1) })
         .withMissingArtifacts(modReport.missingArtifacts filter { a => f(configuration, modReport.module, a) })
     }
   def substitute(f: (String, ModuleID, Seq[(Artifact, File)]) => Seq[(Artifact, File)]): UpdateReport =
     moduleReportMap { (configuration, modReport) =>
-      val newArtifacts = f(configuration, modReport.module, modReport.artifacts)
+      val f2: (String, ModuleID, Array[xsbti.T2[Artifact, File]]) => Array[xsbti.T2[Artifact, File]] = {
+        case (a1, a2, a3) =>
+          val a32 = a3.toSeq map (artFile => (artFile.get1, artFile.get2))
+          val newArtifacts = f(a1, a2, a32)
+          val newArtifacts2 = newArtifacts.map { t2 }.toArray
+          newArtifacts2
+      }
+      val newArtifacts = f2(configuration, modReport.module, modReport.artifacts)
       modReport.withArtifacts(newArtifacts)
       // modReport.copy(
       //   artifacts = newArtifacts,

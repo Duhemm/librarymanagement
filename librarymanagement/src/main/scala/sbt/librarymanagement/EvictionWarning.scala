@@ -6,6 +6,7 @@ import ScalaArtifacts.{ LibraryID, CompilerID }
 import sbt.util.Logger
 import sbt.internal.util.ShowLines
 import sbt.internal.librarymanagement.{ InlineConfiguration, IvySbt }
+import sbt.util.InterfaceUtil.m2o
 
 final class EvictionWarningOptions private[sbt] (
   val configurations: Seq[Configuration],
@@ -109,6 +110,7 @@ final class EvictionPair private[sbt] (
 }
 
 object EvictionPair {
+  import ShowLines._
   implicit val evictionPairLines: ShowLines[EvictionPair] = ShowLines { a: EvictionPair =>
     val revs = a.evicteds map { _.module.revision }
     val revsStr = if (revs.size <= 1) revs.mkString else "(" + revs.mkString(", ") + ")"
@@ -116,8 +118,8 @@ object EvictionPair {
       val callers: String =
         if (a.showCallers)
           r.callers match {
-            case Seq() => ""
-            case cs    => (cs map { _.caller.toString }).mkString(" (caller: ", ", ", ")")
+            case Array() => ""
+            case cs      => (cs flatMap { _.caller.lines }).mkString(" (caller: ", ", ", ")")
           }
         else ""
       r.module.revision + callers
@@ -158,7 +160,7 @@ object EvictionWarning {
   }
 
   private[sbt] def isScalaArtifact(module: IvySbt#Module, organization: String, name: String): Boolean =
-    module.moduleSettings.ivyScala match {
+    m2o(module.moduleSettings.ivyScala) match {
       case Some(s) =>
         organization == s.scalaOrganization &&
           (name == LibraryID) || (name == CompilerID)
@@ -168,7 +170,7 @@ object EvictionWarning {
   private[sbt] def processEvictions(module: IvySbt#Module, options: EvictionWarningOptions, reports: Seq[OrganizationArtifactReport]): EvictionWarning = {
     val directDependencies = module.moduleSettings match {
       case x: InlineConfiguration => x.dependencies
-      case _                      => Seq()
+      case _                      => Array()
     }
     val pairs = reports map { detail =>
       val evicteds = detail.modules filter { _.evicted }
@@ -185,11 +187,11 @@ object EvictionWarning {
     val transitiveEvictions: mutable.ListBuffer[EvictionPair] = mutable.ListBuffer()
     def guessCompatible(p: EvictionPair): Boolean =
       p.evicteds forall { r =>
-        options.guessCompatible((r.module, p.winner map { _.module }, module.moduleSettings.ivyScala))
+        options.guessCompatible((r.module, p.winner map { _.module }, m2o(module.moduleSettings.ivyScala)))
       }
     pairs foreach {
       case p if isScalaArtifact(module, p.organization, p.name) =>
-        (module.moduleSettings.ivyScala, p.winner) match {
+        (m2o(module.moduleSettings.ivyScala), p.winner) match {
           case (Some(s), Some(winner)) if (s.scalaFullVersion != winner.module.revision) && options.warnScalaVersionEviction =>
             scalaEvictions += p
           case _ =>

@@ -23,12 +23,15 @@ object ScalaArtifacts {
 
   def dottyID(binaryVersion: String): String = s"${DottyIDPrefix}_${binaryVersion}"
 
-  def libraryDependency(version: String): ModuleID = ModuleID(Organization, LibraryID, version)
+  def libraryDependency(version: String): ModuleID = new ModuleID(Organization, LibraryID, version)
 
   private[sbt] def toolDependencies(org: String, version: String, isDotty: Boolean = false): Seq[ModuleID] =
     if (isDotty)
-      Seq(ModuleID(org, DottyIDPrefix, version, Some(Configurations.ScalaTool.name + "->compile"),
-        crossVersion = CrossVersion.binary))
+      Seq(
+        new ModuleID(org, DottyIDPrefix, version)
+          .withConfigurations(xsbti.Maybe.just(Configurations.ScalaTool.name + "->compile"))
+          .withCrossVersion(CrossVersionUtil.binary)
+      )
     else
       Seq(
         scalaToolDependency(org, ScalaArtifacts.CompilerID, version),
@@ -36,7 +39,8 @@ object ScalaArtifacts {
       )
 
   private[this] def scalaToolDependency(org: String, id: String, version: String): ModuleID =
-    ModuleID(org, id, version, Some(Configurations.ScalaTool.name + "->default,optional(default)"))
+    new ModuleID(org, id, version)
+      .withConfigurations(xsbti.Maybe.just(Configurations.ScalaTool.name + "->default,optional(default)"))
 }
 object SbtArtifacts {
   val Organization = "org.scala-sbt"
@@ -100,7 +104,7 @@ private[sbt] object IvyScalaUtil {
     def binaryScalaWarning(dep: DependencyDescriptor): Option[String] =
       {
         val id = dep.getDependencyRevisionId
-        val depBinaryVersion = CrossVersion.binaryScalaVersion(id.getRevision)
+        val depBinaryVersion = CrossVersionUtil.binaryScalaVersion(id.getRevision)
         def isScalaLangOrg = id.getOrganisation == scalaOrganization
         def isNotScalaActorsMigration = !(id.getName startsWith "scala-actors-migration") // Exception to the rule: sbt/sbt#1818
         def isNotScalaPickling = !(id.getName startsWith "scala-pickling") // Exception to the rule: sbt/sbt#1899

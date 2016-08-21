@@ -1,4 +1,6 @@
 {
+	"codecNamespace": "sbt.librarymanagement",
+	"fullCodec": "LibraryManagementCodec",
 	"types": [
 		{
 			"name": "Caller",
@@ -20,19 +22,19 @@
 				},
 				{
 					"name": "isForceDependency",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "isChangingDependency",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "isTransitiveDependency",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "isDirectlyForceDependency",
-					"type": "Boolean"
+					"type": "boolean"
 				}
 			]
 		},
@@ -56,63 +58,93 @@
 				},
 				{
 					"name": "status",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "publicationDate",
-					"type": "xsbti.Maybe<java.util.Date>"
+					"type": "xsbti.Maybe<java.util.Date>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "resolver",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "artifactResolver",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "evicted",
-					"type": "Boolean"
+					"type": "boolean",
+					"default": "false",
+					"since": "0.1"
 				},
 				{
 					"name": "evictedData",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "evictedReason",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "problem",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "homepage",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "extraAttributes",
-					"type": "java.util.Map<String, String>"
+					"type": "java.util.Map<String, String>",
+					"default": "new java.util.HashMap<String, String>()",
+					"since": "0.1"
 				},
 				{
 					"name": "isDefault",
-					"type": "xsbti.Maybe<Boolean>"
+					"type": "xsbti.Maybe<java.lang.Boolean>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "branch",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "configurations",
-					"type": "String*"
+					"type": "String*",
+					"default": "new String[0]",
+					"since": "0.1"
 				},
 				{
 					"name": "licenses",
-					"type": "xsbti.T2<String, xsbti.Maybe<String>>*"
+					"type": "xsbti.T2<String, xsbti.Maybe<String>>*",
+					"default": "new xsbti.T2[0]",
+					"since": "0.1"
 				},
 				{
 					"name": "callers",
-					"type": "sbt.librarymanagement.Caller*"
+					"type": "sbt.librarymanagement.Caller*",
+					"default": "new sbt.librarymanagement.Caller[0]",
+					"since": "0.1"
 				}
 			]
 		},
@@ -144,19 +176,19 @@
 			"fields": [
 				{
 					"name": "resolveTime",
-					"type": "Long"
+					"type": "long"
 				},
 				{
 					"name": "downloadTime",
-					"type": "Long"
+					"type": "long"
 				},
 				{
 					"name": "downloadSize",
-					"type": "Long"
+					"type": "long"
 				},
 				{
 					"name": "cached",
-					"type": "Boolean"
+					"type": "boolean"
 				}
 			]
 		},
@@ -195,7 +227,7 @@
 				},
 				{
 					"name": "sync",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "configurationsToRetrieve",
@@ -215,7 +247,7 @@
 				},
 				{
 					"name": "missingOk",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "logging",
@@ -313,35 +345,51 @@
 				},
 				{
 					"name": "description",
-					"type": "String"
+					"type": "String",
+					"default": "\"\"",
+					"since": "0.1"
 				},
 				{
 					"name": "homepage",
-					"type": "xsbti.Maybe<java.net.URL>"
+					"type": "xsbti.Maybe<java.net.URL>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "startYear",
-					"type": "xsbti.Maybe<Integer>"
+					"type": "xsbti.Maybe<Integer>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "licenses",
-					"type": "xsbti.T2<String, java.net.URL>*"
+					"type": "xsbti.T2<String, java.net.URL>*",
+					"default": "new xsbti.T2[0]",
+					"since": "0.1"
 				},
 				{
 					"name": "organizationName",
-					"type": "String"
+					"type": "String",
+					"default": "\"\"",
+					"since": "0.1"
 				},
 				{
 					"name": "organizationHomepage",
-					"type": "xsbti.Maybe<java.net.URL>"
+					"type": "xsbti.Maybe<java.net.URL>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "scmInfo",
-					"type": "xsbti.Maybe<sbt.librarymanagement.ScmInfo>"
+					"type": "xsbti.Maybe<sbt.librarymanagement.ScmInfo>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "developers",
-					"type": "Developer*"
+					"type": "sbt.librarymanagement.Developer*",
+					"default": "new sbt.librarymanagement.Developer[0]",
+					"since": "0.1"
 				}
 			]
 		},
@@ -357,11 +405,15 @@
 				},
 				{
 					"name": "organization",
-					"type": "String"
+					"type": "String",
+					"default": "\"*\"",
+					"since": "0.1"
 				},
 				{
 					"name": "module",
-					"type": "String"
+					"type": "String",
+					"default": "\"*\"",
+					"since": "0.1"
 				}
 			]
 		},
@@ -385,19 +437,21 @@
 				},
 				{
 					"name": "checkExplicit",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "filterImplicit",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "overrideScalaVersion",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "scalaOrganization",
-					"type": "String"
+					"type": "String",
+					"since": "0.1",
+					"default": "sbt.librarymanagement.ScalaArtifacts.Organization()"
 				}
 			]
 		},
@@ -409,7 +463,7 @@
 			"fields": [
 				{
 					"name": "validate",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "ivyScala",
@@ -429,7 +483,7 @@
 						},
 						{
 							"name": "autoScalaTools",
-							"type": "Boolean"
+							"type": "boolean"
 						}
 					]
 				},
@@ -445,13 +499,13 @@
 						},
 						{
 							"name": "autoScalaTools",
-							"type": "Boolean"
+							"type": "boolean"
 						}
 					]
 				},
 				{
 					"name": "InlineConfiguration",
-					"namespace": "sbt.librarymanagement",
+					"namespace": "sbt.internal.librarymanagement",
 					"target": "Java",
 					"type": "record",
 					"fields": [
@@ -469,27 +523,39 @@
 						},
 						{
 							"name": "overrides",
-							"type": "java.util.Set<sbt.librarymanagement.ModuleID>"
+							"type": "java.util.Set<sbt.librarymanagement.ModuleID>",
+							"default": "new java.util.HashSet<sbt.librarymanagement.ModuleID>()",
+							"since": "0.1"
 						},
 						{
 							"name": "excludes",
-							"type": "sbt.internal.librarymanagement.SbtExclusionRule*"
+							"type": "sbt.internal.librarymanagement.SbtExclusionRule*",
+							"default": "new sbt.internal.librarymanagement.SbtExclusionRule[0]",
+							"since": "0.1"
 						},
 						{
 							"name": "ivyXML",
-							"type": "scala.xml.NodeSeq"
+							"type": "scala.xml.NodeSeq",
+							"default": "scala.xml.NodeSeq.Empty()",
+							"since": "0.1"
 						},
 						{
 							"name": "configurations",
-							"type": "sbt.librarymanagement.Configuration*"
+							"type": "sbt.librarymanagement.Configuration*",
+							"default": "new sbt.librarymanagement.Configuration[0]",
+							"since": "0.1"
 						},
 						{
 							"name": "defaultConfiguration",
-							"type": "xsbti.Maybe<sbt.librarymanagement.Configuration>"
+							"type": "xsbti.Maybe<sbt.librarymanagement.Configuration>",
+							"default": "xsbti.Maybe.nothing()",
+							"since": "0.1"
 						},
 						{
 							"name": "conflictManager",
-							"type": "sbt.librarymanagement.ConflictManager"
+							"type": "sbt.librarymanagement.ConflictManager",
+							"default": "sbt.librarymanagement.ConflictManagerUtil.latestRevision()",
+							"since": "0.1"
 						}
 					]
 				}
@@ -604,7 +670,7 @@
 				},
 				{
 					"name": "isPublic",
-					"type": "Boolean",
+					"type": "boolean",
 					"default": "true",
 					"since": "1.0.0"
 				},
@@ -616,7 +682,7 @@
 				},
 				{
 					"name": "transitive",
-					"type": "Boolean",
+					"type": "boolean",
 					"default": "true",
 					"since": "1.0.0"
 				}
@@ -634,27 +700,39 @@
 				},
 				{
 					"name": "tpe",
-					"type": "String"
+					"type": "String",
+					"default": "ArtifactUtil.DefaultType()",
+					"since": "0.1"
 				},
 				{
 					"name": "extension",
-					"type": "String"
+					"type": "String",
+					"default": "ArtifactUtil.DefaultExtension()",
+					"since": "0.1"
 				},
 				{
 					"name": "classifier",
-					"type": "xsbti.Maybe<String>"
+					"type": "xsbti.Maybe<String>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "configurations",
-					"type": "sbt.librarymanagement.Configuration*"
+					"type": "sbt.librarymanagement.Configuration*",
+					"default": "new sbt.librarymanagement.Configuration[0]",
+					"since": "0.1"
 				},
 				{
 					"name": "url",
-					"type": "xsbti.Maybe<java.net.URL>"
+					"type": "xsbti.Maybe<java.net.URL>",
+					"default": "xsbti.Maybe.nothing()",
+					"since": "0.1"
 				},
 				{
 					"name": "extraAttributes",
-					"type": "java.util.Map<String, String>"
+					"type": "java.util.Map<String, String>",
+					"default": "new java.util.HashMap<String, String>()",
+					"since": "0.1"
 				}
 			]
 		},
@@ -730,11 +808,11 @@
 			"fields": [
 				{
 					"name": "isLocal",
-					"type": "Boolean"
+					"type": "boolean"
 				},
 				{
 					"name": "isTransactional",
-					"type": "xsbti.Maybe<Boolean>"
+					"type": "xsbti.Maybe<java.lang.Boolean>"
 				}
 			]
 		},
@@ -746,23 +824,33 @@
 			"fields": [
 				{
 					"name": "ivyPatterns",
-					"type": "String*"
+					"type": "String*",
+					"default": "new String[0]",
+					"since": "0.3"
 				},
 				{
 					"name": "artifactPatterns",
-					"type": "String*"
+					"type": "String*",
+					"default": "new String[0]",
+					"since": "0.1"
 				},
 				{
 					"name": "isMavenCompatible",
-					"type": "Boolean"
+					"type": "boolean",
+					"default": "true",
+					"since": "0.2"
 				},
 				{
 					"name": "descriptorOptional",
-					"type": "Boolean"
+					"type": "boolean",
+					"default": "false",
+					"since": "0.4"
 				},
 				{
 					"name": "skipConsistencyCheck",
-					"type": "Boolean"
+					"type": "boolean",
+					"default": "false",
+					"since": "0.4"
 				}
 			]
 		},
@@ -803,10 +891,10 @@
 					]
 				},
 				{
-					"name": "MavenRepository",
+					"name": "IMavenRepository",
 					"namespace": "sbt.librarymanagement",
 					"target": "Java",
-					"type": "record",
+					"type": "interface",
 					"doc": "An instance of a remote maven repository.  Note:  This will use Aether/Maven to resolve artifacts.",
 					"fields": [
 						{
@@ -815,23 +903,33 @@
 						},
 						{
 							"name": "localIfFile",
-							"type": "Boolean"
+							"type": "boolean",
+							"since": "0.1",
+							"default": "true"
 						}
-					]
-				},
-				{
-					"name": "MavenCache",
-					"namespace": "sbt.librarymanagement",
-					"target": "Java",
-					"type": "record",
-					"doc": [
-						"An instance of maven CACHE directory.  You cannot treat a cache directory the same as a a remote repository because",
-						"the metadata is different (see Aether ML discussion)."
 					],
-					"fields": [
+					"types": [
 						{
-							"name": "rootFile",
-							"type": "java.io.File"
+							"name": "MavenRepository",
+							"namespace": "sbt.librarymanagement",
+							"target": "Java",
+							"type": "record"
+						},
+						{
+							"name": "MavenCache",
+							"namespace": "sbt.librarymanagement",
+							"target": "Java",
+							"type": "record",
+							"doc": [
+								"An instance of maven CACHE directory.  You cannot treat a cache directory the same as a a remote repository because",
+								"the metadata is different (see Aether ML discussion)."
+							],
+							"fields": [
+								{
+									"name": "rootFile",
+									"type": "java.io.File"
+								}
+							]
 						}
 					]
 				},
@@ -855,7 +953,7 @@
 							"fields": [
 								{
 									"name": "configuration",
-									"type": "FileConfiguration"
+									"type": "sbt.librarymanagement.FileConfiguration"
 								}
 							]
 						},
@@ -873,11 +971,7 @@
 							"fields": [
 								{
 									"name": "connection",
-									"type": "SshConnection"
-								},
-								{
-									"name": "publishPermissions",
-									"type": "xsbti.Maybe<String>"
+									"type": "sbt.librarymanagement.SshConnection"
 								}
 							],
 							"types": [
@@ -885,7 +979,13 @@
 									"name": "SshRepository",
 									"namespace": "sbt.librarymanagement",
 									"target": "Java",
-									"type": "record"
+									"type": "record",
+									"fields": [
+										{
+											"name": "publishPermissions",
+											"type": "xsbti.Maybe<String>"
+										}
+									]
 								},
 								{
 									"name": "SftpRepository",
@@ -919,7 +1019,7 @@
 				},
 				{
 					"name": "resolver",
-					"type": "Resolver"
+					"type": "sbt.librarymanagement.Resolver"
 				}
 			]
 		},
@@ -971,7 +1071,7 @@
 						},
 						{
 							"name": "localOnly",
-							"type": "Boolean"
+							"type": "boolean"
 						},
 						{
 							"name": "checksums",
@@ -998,6 +1098,138 @@
 							"type": "sbt.librarymanagement.Resolver*"
 						}
 					]
+				}
+			]
+		},
+		{
+			"name": "UpdateReportLite",
+			"namespace": "sbt.internal.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "configurations",
+					"type": "sbt.internal.librarymanagement.ConfigurationReportLite*"
+				}
+			]
+		},
+		{
+			"name": "ConfigurationReportLite",
+			"namespace": "sbt.internal.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "configuration",
+					"type": "String"
+				},
+				{
+					"name": "details",
+					"type": "sbt.librarymanagement.OrganizationArtifactReport*"
+				}
+			]
+		},
+		{
+			"name": "ModuleID",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "organization",
+					"type": "String"
+				},
+				{
+					"name": "name",
+					"type": "String"
+				},
+				{
+					"name": "revision",
+					"type": "String"
+				},
+				{
+					"name": "configurations",
+					"type": "xsbti.Maybe<String>",
+					"since": "0.1",
+					"default": "xsbti.Maybe.nothing()"
+				},
+				{
+					"name": "isChanging",
+					"type": "boolean",
+					"since": "0.1",
+					"default": "false"
+				},
+				{
+					"name": "isTransitive",
+					"type": "boolean",
+					"since": "0.1",
+					"default": "true"
+				},
+				{
+					"name": "isForce",
+					"type": "boolean",
+					"since": "0.1",
+					"default": "false"
+				},
+				{
+					"name": "explicitArtifacts",
+					"type": "sbt.librarymanagement.Artifact*",
+					"since": "0.1",
+					"default": "new sbt.librarymanagement.Artifact[0]"
+				},
+				{
+					"name": "inclusions",
+					"type": "sbt.librarymanagement.InclExclRule*",
+					"since": "0.1",
+					"default": "new sbt.librarymanagement.InclExclRule[0]"
+				},
+				{
+					"name": "exclusions",
+					"type": "sbt.librarymanagement.InclExclRule*",
+					"since": "0.1",
+					"default": "new sbt.librarymanagement.InclExclRule[0]"
+				},
+				{
+					"name": "extraAttributes",
+					"type": "java.util.Map<String, String>",
+					"since": "0.1",
+					"default": "new java.util.HashMap<String, String>()"
+				},
+				{
+					"name": "crossVersion",
+					"type": "sbt.librarymanagement.CrossVersion",
+					"since": "0.1",
+					"default": "new sbt.librarymanagement.Disabled()"
+				},
+				{
+					"name": "branchName",
+					"type": "xsbti.Maybe<String>",
+					"since": "0.1",
+					"default": "xsbti.Maybe.nothing()"
+				}
+			]
+		},
+		{
+			"name": "ArtifactTypeFilter",
+			"namespace": "sbt.librarymanagement",
+			"target": "Java",
+			"type": "record",
+			"fields": [
+				{
+					"name": "types",
+					"doc": [
+						"Represents the artifact types that we should try to resolve for (as in the allowed values of",
+						"`artifact[type]` from a dependency `<publications>` section). One can use this to filter",
+						"source / doc artifacts."
+					],
+					"type": "java.util.Set<String>"
+				},
+				{
+					"name": "inverted",
+					"doc": [
+						"Whether to invert the types filter (i.e. allow only types NOT in the set)"
+					],
+					"type": "boolean"
 				}
 			]
 		}

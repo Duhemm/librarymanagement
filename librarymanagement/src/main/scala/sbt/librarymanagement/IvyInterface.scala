@@ -3,10 +3,8 @@
  */
 package sbt.librarymanagement
 
-import java.net.URL
 import org.apache.ivy.core.module.descriptor
 import org.apache.ivy.util.filter.{ Filter => IvyFilter }
-import sbt.serialization._
 
 /** Additional information about a project module */
 // final case class ModuleInfo(nameFormal: String, description: String = "", homepage: Option[URL] = None, startYear: Option[Int] = None, licenses: Seq[(String, URL)] = Nil, organizationName: String = "", organizationHomepage: Option[URL] = None, scmInfo: Option[ScmInfo] = None, developers: Seq[Developer] = Seq()) {
@@ -41,21 +39,27 @@ object InclExclRuleUtil {
 //   implicit val pickler: Pickler[InclExclRule] with Unpickler[InclExclRule] = PicklerUnpickler.generate[InclExclRule]
 // }
 
-/**
- * Work around the inadequacy of Ivy's ArtifactTypeFilter (that it cannot reverse a filter)
- * @param types represents the artifact types that we should try to resolve for (as in the allowed values of
- *              `artifact[type]` from a dependency `<publications>` section). One can use this to filter
- *              source / doc artifacts.
- * @param inverted whether to invert the types filter (i.e. allow only types NOT in the set)
- */
-case class ArtifactTypeFilter(types: Set[String], inverted: Boolean) {
-  def invert = copy(inverted = !inverted)
-  def apply(a: descriptor.Artifact): Boolean = (types contains a.getType) ^ inverted
+// /**
+//  * Work around the inadequacy of Ivy's ArtifactTypeFilter (that it cannot reverse a filter)
+//  * @param types represents the artifact types that we should try to resolve for (as in the allowed values of
+//  *              `artifact[type]` from a dependency `<publications>` section). One can use this to filter
+//  *              source / doc artifacts.
+//  * @param inverted whether to invert the types filter (i.e. allow only types NOT in the set)
+//  */
+// case class ArtifactTypeFilter(types: Set[String], inverted: Boolean) {
+//   def invert = copy(inverted = !inverted)
+//   def apply(a: descriptor.Artifact): Boolean = (types contains a.getType) ^ inverted
+// }
+
+class RichArtifactTypeFilter(val artifactTypeFilter: ArtifactTypeFilter) extends AnyVal {
+  def invert = artifactTypeFilter.withInverted(!artifactTypeFilter.inverted)
+  def apply(a: descriptor.Artifact): Boolean = (artifactTypeFilter.types contains a.getType) ^ artifactTypeFilter.inverted
 }
 
-object ArtifactTypeFilter {
-  def allow(types: Set[String]) = ArtifactTypeFilter(types, false)
-  def forbid(types: Set[String]) = ArtifactTypeFilter(types, true)
+object ArtifactTypeFilterUtil {
+  import scala.collection.JavaConverters._
+  def allow(types: Set[String]) = new ArtifactTypeFilter(types.asJava, false)
+  def forbid(types: Set[String]) = new ArtifactTypeFilter(types.asJava, true)
 
   implicit def toIvyFilter(f: ArtifactTypeFilter): IvyFilter = new IvyFilter {
     override def accept(o: Object): Boolean = Option(o) exists { case a: descriptor.Artifact => f.apply(a) }
@@ -72,10 +76,10 @@ object ArtifactTypeFilter {
 
 /** See http://ant.apache.org/ivy/history/latest-milestone/settings/conflict-managers.html for details of the different conflict managers.*/
 object ConflictManagerUtil {
-  val all = ConflictManager("all")
-  val latestTime = ConflictManager("latest-time")
-  val latestRevision = ConflictManager("latest-revision")
-  val latestCompatible = ConflictManager("latest-compatible")
-  val strict = ConflictManager("strict")
+  val all = new ConflictManager("all")
+  val latestTime = new ConflictManager("latest-time")
+  val latestRevision = new ConflictManager("latest-revision")
+  val latestCompatible = new ConflictManager("latest-compatible")
+  val strict = new ConflictManager("strict")
   val default = latestRevision
 }

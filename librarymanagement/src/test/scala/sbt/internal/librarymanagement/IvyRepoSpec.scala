@@ -4,9 +4,11 @@ import org.scalatest.Inside
 import sbt.internal.librarymanagement.impl.DependencyBuilders
 import sbt.librarymanagement._
 
+import sbt.util.InterfaceUtil.m2o
+
 class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
 
-  val ourModuleID = ModuleID("com.example", "foo", "0.1.0", Some("compile"))
+  val ourModuleID = new ModuleID("com.example", "foo", "0.1.0").withConfigurations(xsbti.Maybe.just("compile"))
 
   def makeModuleForDepWithSources = {
     // By default a module seems to only have [compile, test, runtime], yet deps automatically map to
@@ -30,8 +32,9 @@ class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
     inside(report.configuration("compile").map(_.modules)) {
       case Some(Seq(mr)) =>
         inside(mr.artifacts) {
-          case Seq((ar, _)) =>
-            ar.`type` shouldBe "jar"
+          case Array(artFile) =>
+            val ar = artFile.get1
+            ar.tpe shouldBe "jar"
             ar.extension shouldBe "jar"
         }
     }
@@ -64,7 +67,7 @@ class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
       GetClassifiersModule(ourModuleID, externalModules, Seq(Configurations.Compile), attemptedClassifiers)
     }
 
-    val gcm = GetClassifiersConfiguration(clMod, Map.empty, c.copy(artifactFilter = c.artifactFilter.invert), ivyScala, srcTypes, docTypes)
+    val gcm = GetClassifiersConfiguration(clMod, Map.empty, c.withArtifactFilter(c.artifactFilter.invert), m2o(ivyScala), srcTypes, docTypes)
 
     val report2 = IvyActions.updateClassifiers(m.owner, gcm, UnresolvedWarningConfiguration(), LogicalClock.unknown, None, Vector(), log)
 
@@ -72,9 +75,10 @@ class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
     inside(report2.configuration("compile").map(_.modules)) {
       case Some(Seq(mr)) =>
         inside(mr.artifacts) {
-          case Seq((ar, _)) =>
+          case Array(artFile) =>
+            val ar = artFile.get1
             ar.name shouldBe "libmodule-source"
-            ar.`type` shouldBe "src"
+            ar.tpe shouldBe "src"
             ar.extension shouldBe "jar"
         }
     }
@@ -84,6 +88,6 @@ class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
 
   lazy val testIvy = {
     val repoUrl = getClass.getResource("/test-ivy-repo")
-    Resolver.url("Test Repo", repoUrl)(Resolver.ivyStylePatterns)
+    ResolverUtil.url("Test Repo", repoUrl)(ResolverUtil.ivyStylePatterns)
   }
 }

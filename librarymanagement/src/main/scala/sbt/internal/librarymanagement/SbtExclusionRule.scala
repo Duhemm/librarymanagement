@@ -1,7 +1,7 @@
 package sbt.internal.librarymanagement
 
-import impl.{ GroupID, GroupArtifactID }
-import sbt.librarymanagement._
+// import impl.{ GroupID, GroupArtifactID }
+// import sbt.librarymanagement._
 
 // final class SbtExclusionRule(
 //   val organization: String,

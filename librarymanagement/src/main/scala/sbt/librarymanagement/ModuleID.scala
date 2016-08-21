@@ -6,35 +6,47 @@ package sbt.librarymanagement
 import java.net.URL
 
 import sbt.internal.librarymanagement.mavenint.SbtPomExtraProperties
-import sbt.serialization._
 
-final case class ModuleID(organization: String, name: String, revision: String, configurations: Option[String] = None, isChanging: Boolean = false, isTransitive: Boolean = true, isForce: Boolean = false, explicitArtifacts: Seq[Artifact] = Nil, inclusions: Seq[InclusionRule] = Nil, exclusions: Seq[ExclusionRule] = Nil, extraAttributes: Map[String, String] = Map.empty, crossVersion: CrossVersion = CrossVersion.Disabled, branchName: Option[String] = None) {
+import sbt.util.InterfaceUtil.{ m2o, o2m }
+
+//final case class ModuleID(organization: String, name: String, revision: String, configurations: Option[String] = None, isChanging: Boolean = false, isTransitive: Boolean = true, isForce: Boolean = false, explicitArtifacts: Seq[Artifact] = Nil, inclusions: Seq[InclusionRule] = Nil, exclusions: Seq[ExclusionRule] = Nil, extraAttributes: Map[String, String] = Map.empty, crossVersion: CrossVersion = CrossVersion.Disabled, branchName: Option[String] = None) {
+
+// override def toString: String =
+//   organization + ":" + name + ":" + revision +
+//     (configurations match { case Some(s) => ":" + s; case None => "" }) +
+//     (if (extraAttributes.isEmpty) "" else " " + extraString)
+
+final class RichModuleID(val moduleID: ModuleID) extends AnyVal {
+
+  import scala.collection.JavaConverters._
+  import moduleID._
+
   override def toString: String =
     organization + ":" + name + ":" + revision +
-      (configurations match { case Some(s) => ":" + s; case None => "" }) +
+      (m2o(configurations) match { case Some(s) => ":" + s; case None => "" }) +
       (if (extraAttributes.isEmpty) "" else " " + extraString)
 
   /** String representation of the extra attributes, excluding any information only attributes. */
   def extraString: String = extraDependencyAttributes.map { case (k, v) => k + "=" + v } mkString ("(", ", ", ")")
 
   /** Returns the extra attributes except for ones marked as information only (ones that typically would not be used for dependency resolution). */
-  def extraDependencyAttributes: Map[String, String] = extraAttributes.filterKeys(!_.startsWith(SbtPomExtraProperties.POM_INFO_KEY_PREFIX))
+  def extraDependencyAttributes: Map[String, String] = extraAttributes.asScala.filterKeys(!_.startsWith(SbtPomExtraProperties.POM_INFO_KEY_PREFIX)).toMap
 
   @deprecated("Use `cross(CrossVersion)`, the variant accepting a CrossVersion value constructed by a member of the CrossVersion object instead.", "0.12.0")
-  def cross(v: Boolean): ModuleID = cross(if (v) CrossVersion.binary else CrossVersion.Disabled)
+  def cross(v: Boolean): ModuleID = cross(if (v) CrossVersionUtil.binary else new Disabled)
 
   @deprecated("Use `cross(CrossVersion)`, the variant accepting a CrossVersion value constructed by a member of the CrossVersion object instead.", "0.12.0")
-  def cross(v: Boolean, verRemap: String => String): ModuleID = cross(if (v) CrossVersion.binaryMapped(verRemap) else CrossVersion.Disabled)
+  def cross(v: Boolean, verRemap: String => String): ModuleID = cross(if (v) CrossVersionUtil.binaryMapped(verRemap) else new Disabled)
 
   /** Specifies the cross-version behavior for this module.  See [CrossVersion] for details.*/
-  def cross(v: CrossVersion): ModuleID = copy(crossVersion = v)
+  def cross(v: CrossVersion): ModuleID = withCrossVersion(v)
 
   // () required for chaining
   /** Do not follow dependencies of this module.  Synonym for `intransitive`.*/
   def notTransitive() = intransitive()
 
   /** Do not follow dependencies of this module.  Synonym for `notTransitive`.*/
-  def intransitive() = copy(isTransitive = false)
+  def intransitive() = withIsTransitive(false)
 
   /**
    * Marks this dependency as "changing".  Ivy will always check if the metadata has changed and then if the artifact has changed,
@@ -42,60 +54,64 @@ final case class ModuleID(organization: String, name: String, revision: String, 
    *
    * See the "Changes in artifacts" section of https://ant.apache.org/ivy/history/trunk/concept.html for full details.
    */
-  def changing() = copy(isChanging = true)
+  def changing() = withIsChanging(true)
 
   /**
    * Indicates that conflict resolution should only select this module's revision.
    * This prevents a newer revision from being pulled in by a transitive dependency, for example.
    */
-  def force() = copy(isForce = true)
+  def force() = withIsForce(true)
 
   /**
    * Specifies a URL from which the main artifact for this dependency can be downloaded.
    * This value is only consulted if the module is not found in a repository.
    * It is not included in published metadata.
    */
-  def from(url: String) = artifacts(Artifact(name, new URL(url)))
+  def from(url: String) = artifacts(MakeArtifact(name, new URL(url)))
 
   /** Adds a dependency on the artifact for this module with classifier `c`. */
-  def classifier(c: String) = artifacts(Artifact(name, c))
+  def classifier(c: String) = artifacts(MakeArtifact(name, c))
 
   /**
    * Declares the explicit artifacts for this module.  If this ModuleID represents a dependency,
    * these artifact definitions override the information in the dependency's published metadata.
    */
-  def artifacts(newArtifacts: Artifact*) = copy(explicitArtifacts = newArtifacts ++ this.explicitArtifacts)
+  def artifacts(newArtifacts: Artifact*) = withExplicitArtifacts(newArtifacts.toArray ++ moduleID.explicitArtifacts)
 
   /**
    * Applies the provided exclusions to dependencies of this module.  Note that only exclusions that specify
    * both the exact organization and name and nothing else will be included in a pom.xml.
    */
-  def excludeAll(rules: InclExclRule*) = copy(exclusions = this.exclusions ++ rules)
+  def excludeAll(rules: InclExclRule*) = {
+    val r2: Array[InclExclRule] = rules.toArray
+    val full: Array[InclExclRule] = moduleID.exclusions ++ r2
+    withExclusions(full)
+  }
 
   /** Excludes the dependency with organization `org` and `name` from being introduced by this dependency during resolution. */
-  def exclude(org: String, name: String) = excludeAll(InclExclRule(org, name))
+  def exclude(org: String, name: String) = excludeAll(new InclExclRule(org, name, "*", Array.empty))
 
   /**
    * Adds extra attributes for this module.  All keys are prefixed with `e:` if they are not already so prefixed.
    * This information will only be published in an ivy.xml and not in a pom.xml.
    */
-  def extra(attributes: (String, String)*) = copy(extraAttributes = this.extraAttributes ++ ModuleID.checkE(attributes))
+  def extra(attributes: (String, String)*) = withExtraAttributes((moduleID.extraAttributes.asScala ++ ModuleIDUtil.checkE(attributes).toMap).asJava)
 
   /**
    * Not recommended for new use.  This method is not deprecated, but the `update-classifiers` task is preferred
    * for performance and correctness.  This method adds a dependency on this module's artifact with the "sources"
    * classifier.  If you want to also depend on the main artifact, be sure to also call `jar()` or use `withSources()` instead.
    */
-  def sources() = artifacts(Artifact.sources(name))
+  def sources() = artifacts(ArtifactUtil.sources(name))
 
   /**
    * Not recommended for new use.  This method is not deprecated, but the `update-classifiers` task is preferred
    * for performance and correctness.  This method adds a dependency on this module's artifact with the "javadoc"
    * classifier.  If you want to also depend on the main artifact, be sure to also call `jar()` or use `withJavadoc()` instead.
    */
-  def javadoc() = artifacts(Artifact.javadoc(name))
+  def javadoc() = artifacts(ArtifactUtil.javadoc(name))
 
-  def pomOnly() = artifacts(Artifact.pom(name))
+  def pomOnly() = artifacts(ArtifactUtil.pom(name))
 
   /**
    * Not recommended for new use.  This method is not deprecated, but the `update-classifiers` task is preferred
@@ -111,24 +127,24 @@ final case class ModuleID(organization: String, name: String, revision: String, 
    */
   def withJavadoc() = jarIfEmpty.javadoc()
 
-  private def jarIfEmpty = if (explicitArtifacts.isEmpty) jar() else this
+  private def jarIfEmpty = if (explicitArtifacts.isEmpty) jar() else moduleID
 
   /**
    * Declares a dependency on the main artifact.  This is implied by default unless artifacts are explicitly declared, such
    * as when adding a dependency on an artifact with a classifier.
    */
-  def jar() = artifacts(Artifact(name))
+  def jar() = artifacts(new Artifact(name))
 
   /**
    * Sets the Ivy branch of this module.
    */
-  def branch(branchName: String) = copy(branchName = Some(branchName))
+  def branch(branchName: String): ModuleID = branch(Some(branchName))
 
-  def branch(branchName: Option[String]) = copy(branchName = branchName)
+  def branch(branchName: Option[String]): ModuleID = withBranchName(o2m(branchName))
 }
 
-object ModuleID {
-  implicit val pickler: Pickler[ModuleID] with Unpickler[ModuleID] = PicklerUnpickler.generate[ModuleID]
+object ModuleIDUtil {
+  // implicit val pickler: Pickler[ModuleID] with Unpickler[ModuleID] = PicklerUnpickler.generate[ModuleID]
 
   /** Prefixes all keys with `e:` if they are not already so prefixed. */
   def checkE(attributes: Seq[(String, String)]) =

@@ -20,7 +20,7 @@ class InconsistentDuplicateSpec extends UnitSpec {
     IvySbt.inconsistentDuplicateWarning(Seq(akkaActor230Test, akkaActor230)) shouldBe Nil
   }
 
-  def akkaActor214 = ModuleID("com.typesafe.akka", "akka-actor", "2.1.4", Some("compile")) cross CrossVersion.binary
-  def akkaActor230 = ModuleID("com.typesafe.akka", "akka-actor", "2.3.0", Some("compile")) cross CrossVersion.binary
-  def akkaActor230Test = ModuleID("com.typesafe.akka", "akka-actor", "2.3.0", Some("test")) cross CrossVersion.binary
+  def akkaActor214 = new ModuleID("com.typesafe.akka", "akka-actor", "2.1.4").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary
+  def akkaActor230 = new ModuleID("com.typesafe.akka", "akka-actor", "2.3.0").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary
+  def akkaActor230Test = new ModuleID("com.typesafe.akka", "akka-actor", "2.3.0").withConfigurations(xsbti.Maybe.just("test")) cross CrossVersionUtil.binary
 }

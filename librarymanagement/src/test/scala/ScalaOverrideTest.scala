@@ -5,7 +5,7 @@ import org.apache.ivy.core.module.descriptor.DefaultDependencyDescriptor
 
 import sbt.internal.util.UnitSpec
 
-import IvyScala.OverrideScalaMediator
+import IvyScalaUtil.OverrideScalaMediator
 import ScalaArtifacts._
 
 class ScalaOverrideTest extends UnitSpec {

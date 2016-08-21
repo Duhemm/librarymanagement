@@ -60,12 +60,12 @@ class ComponentManager(globalLock: xsbti.GlobalLock, provider: xsbti.ComponentPr
 
   def define(id: String, files: Iterable[File]) = lockLocalCache { provider.defineComponent(id, files.toSeq.toArray) }
   /** Retrieve the file for component 'id' from the local repository. */
-  private def update(id: String): Unit = ivyCache.withCachedJar(sbtModuleID(id), Some(globalLock), log)(jar => define(id, Seq(jar)))
+  private def update(id: String): Unit = ivyCache.withCachedJar(sbtModuleID(id), xsbti.Maybe.just(globalLock), log)(jar => define(id, Seq(jar)))
 
-  private def sbtModuleID(id: String) = ModuleID(SbtArtifacts.Organization, id, ComponentManager.stampedVersion)
+  private def sbtModuleID(id: String) = new ModuleID(SbtArtifacts.Organization, id, ComponentManager.stampedVersion)
   /** Install the files for component 'id' to the local repository.  This is usually used after writing files to the directory returned by 'location'. */
-  def cache(id: String): Unit = ivyCache.cacheJar(sbtModuleID(id), file(id)(IfMissing.Fail), Some(globalLock), log)
-  def clearCache(id: String): Unit = lockGlobalCache { ivyCache.clearCachedJar(sbtModuleID(id), Some(globalLock), log) }
+  def cache(id: String): Unit = ivyCache.cacheJar(sbtModuleID(id), file(id)(IfMissing.Fail), xsbti.Maybe.just(globalLock), log)
+  def clearCache(id: String): Unit = lockGlobalCache { ivyCache.clearCachedJar(sbtModuleID(id), xsbti.Maybe.just(globalLock), log) }
 }
 class InvalidComponent(msg: String, cause: Throwable) extends RuntimeException(msg, cause) {
   def this(msg: String) = this(msg, null)

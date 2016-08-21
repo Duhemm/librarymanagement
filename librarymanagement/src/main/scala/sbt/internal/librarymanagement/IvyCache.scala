@@ -15,7 +15,14 @@ import sbt.io.Path
 import sbt.util.Logger
 import sbt.librarymanagement._
 
+import sbt.internal.util.{ CacheStore, FileBasedStore }
 import sbt.util.InterfaceUtil.o2m
+
+import scala.json.ast.unsafe._
+import scala.collection.mutable
+import jawn.{ SupportParser, MutableFacade }
+import sjsonnew.IsoString
+import sjsonnew.support.scalajson.unsafe.{ CompactPrinter, Converter }
 
 class NotInCache(val id: ModuleID, cause: Throwable)
   extends RuntimeException(NotInCache(id, cause), cause) {
@@ -29,10 +36,13 @@ private object NotInCache {
     }
 }
 /** Provides methods for working at the level of a single jar file with the default Ivy cache.*/
-class IvyCache(val ivyHome: Option[File]) {
+class IvyCache(val ivyHome: Option[File], fileToStore: File => CacheStore) {
+
+  def this(ivyHome: Option[File]) = this(ivyHome, DefaultFileToStore)
+
   def lockFile = new File(ivyHome getOrElse Path.userHome, ".sbt.cache.lock")
   /** Caches the given 'file' with the given ID.  It may be retrieved or cleared using this ID.*/
-  def cacheJar(moduleID: ModuleID, file: File, lock: Option[xsbti.GlobalLock], log: Logger): Unit = {
+  def cacheJar(moduleID: ModuleID, file: File, lock: xsbti.Maybe[xsbti.GlobalLock], log: Logger): Unit = {
     val artifact = defaultArtifact(moduleID)
     val resolved = new ResolvedResource(new FileResource(new IvyFileRepository, file), moduleID.revision)
     withDefaultCache(lock, log) { cache =>
@@ -42,12 +52,12 @@ class IvyCache(val ivyHome: Option[File]) {
     }
   }
   /** Clears the cache of the jar for the given ID.*/
-  def clearCachedJar(id: ModuleID, lock: Option[xsbti.GlobalLock], log: Logger): Unit = {
+  def clearCachedJar(id: ModuleID, lock: xsbti.Maybe[xsbti.GlobalLock], log: Logger): Unit = {
     try { withCachedJar(id, lock, log)(_.delete); () }
     catch { case e: Exception => log.debug("Error cleaning cached jar: " + e.toString) }
   }
   /** Copies the cached jar for the given ID to the directory 'toDirectory'.  If the jar is not in the cache, NotInCache is thrown.*/
-  def retrieveCachedJar(id: ModuleID, toDirectory: File, lock: Option[xsbti.GlobalLock], log: Logger) =
+  def retrieveCachedJar(id: ModuleID, toDirectory: File, lock: xsbti.Maybe[xsbti.GlobalLock], log: Logger) =
     withCachedJar(id, lock, log) { cachedFile =>
       val copyTo = new File(toDirectory, cachedFile.getName)
       FileUtil.copy(cachedFile, copyTo, null)
@@ -55,7 +65,7 @@ class IvyCache(val ivyHome: Option[File]) {
     }
 
   /** Get the location of the cached jar for the given ID in the Ivy cache.  If the jar is not in the cache, NotInCache is thrown .*/
-  def withCachedJar[T](id: ModuleID, lock: Option[xsbti.GlobalLock], log: Logger)(f: File => T): T =
+  def withCachedJar[T](id: ModuleID, lock: xsbti.Maybe[xsbti.GlobalLock], log: Logger)(f: File => T): T =
     {
       val cachedFile =
         try {
@@ -68,7 +78,7 @@ class IvyCache(val ivyHome: Option[File]) {
       if (cachedFile.exists) f(cachedFile) else throw new NotInCache(id)
     }
   /** Calls the given function with the default Ivy cache.*/
-  def withDefaultCache[T](lock: Option[xsbti.GlobalLock], log: Logger)(f: DefaultRepositoryCacheManager => T): T =
+  def withDefaultCache[T](lock: xsbti.Maybe[xsbti.GlobalLock], log: Logger)(f: DefaultRepositoryCacheManager => T): T =
     {
       val (ivy, _) = basicLocalIvy(lock, log)
       ivy.withIvy(log) { ivy =>
@@ -79,12 +89,13 @@ class IvyCache(val ivyHome: Option[File]) {
     }
   private def unknownOrigin(artifact: IvyArtifact) = ArtifactOrigin.unkwnown(artifact)
   /** A minimal Ivy setup with only a local resolver and the current directory as the base directory.*/
-  private def basicLocalIvy(lock: Option[xsbti.GlobalLock], log: Logger) =
+  private def basicLocalIvy(lock: xsbti.Maybe[xsbti.GlobalLock], log: Logger) =
     {
       val local = ResolverUtil.defaultLocal
       val paths = new IvyPaths(new File("."), o2m(ivyHome))
-      val conf = new InlineIvyConfiguration(paths, Seq(local), Nil, Nil, false, lock, IvySbt.DefaultChecksums, None, UpdateOptions(), log)
-      (new IvySbt(conf), local)
+      val conf = new InlineIvyConfiguration(lock, paths.baseDirectory, log, UpdateOptions(), paths, Array(local), Array.empty, Array.empty, false, IvySbt.DefaultChecksums, xsbti.Maybe.nothing[java.io.File]())
+      // val conf = new InlineIvyConfiguration(paths, Seq(local), Nil, Nil, false, lock, IvySbt.DefaultChecksums, None, log)
+      (new IvySbt(conf, fileToStore), local)
     }
   /** Creates a default jar artifact based on the given ID.*/
   private def defaultArtifact(moduleID: ModuleID): IvyArtifact =
@@ -99,4 +110,32 @@ private class FileDownloader extends ResourceDownloader {
     if (!part.renameTo(dest))
       sys.error("Could not move temporary file " + part + " to final location " + dest)
   }
+}
+
+private object FixedParser extends SupportParser[JValue] {
+  implicit val facade: MutableFacade[JValue] =
+    new MutableFacade[JValue] {
+      def jnull() = JNull
+      def jfalse() = JFalse
+      def jtrue() = JTrue
+      def jnum(s: String) = JNumber(s)
+      def jint(s: String) = JNumber(s)
+      def jstring(s: String) = JString(s)
+      def jarray(vs: mutable.ArrayBuffer[JValue]) = JArray(vs.toArray)
+      def jobject(vs: mutable.Map[String, JValue]) = {
+        val array = new Array[JField](vs.size)
+        var i = 0
+        vs.foreach {
+          case (key, value) =>
+            array(i) = JField(key, value)
+            i += 1
+        }
+        JObject(array)
+      }
+    }
+}
+
+object DefaultFileToStore extends (File => CacheStore) {
+  private implicit lazy val isoString: IsoString[JValue] = IsoString.iso(CompactPrinter.apply _, FixedParser.parseUnsafe _)
+  override def apply(f: File): CacheStore = new FileBasedStore(f, Converter)
 }

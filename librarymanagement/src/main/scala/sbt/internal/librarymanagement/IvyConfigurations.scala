@@ -3,11 +3,11 @@
  */
 package sbt.internal.librarymanagement
 
-import java.io.File
-import java.net.URI
-import scala.xml.NodeSeq
-import sbt.util.Logger
-import sbt.librarymanagement._
+// import java.io.File
+// import java.net.URI
+// import scala.xml.NodeSeq
+// import sbt.util.Logger
+// import sbt.librarymanagement._
 
 // final class IvyPaths(val baseDirectory: File, val ivyHome: Option[File]) {
 //   def withBase(newBaseDirectory: File) = new IvyPaths(newBaseDirectory, ivyHome)

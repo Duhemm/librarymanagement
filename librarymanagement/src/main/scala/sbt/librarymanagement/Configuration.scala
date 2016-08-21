@@ -3,8 +3,6 @@
  */
 package sbt.librarymanagement
 
-import sbt.serialization._
-
 object Configurations {
   def config(name: String) = new Configuration(name)
   def default: Seq[Configuration] = defaultMavenConfigurations
@@ -50,6 +48,17 @@ object Configurations {
   private[sbt] def defaultConfiguration(mavenStyle: Boolean) = if (mavenStyle) Configurations.Compile else Configurations.Default
   private[sbt] def removeDuplicates(configs: Iterable[Configuration]) = Set(scala.collection.mutable.Map(configs.map(config => (config.name, config)).toSeq: _*).values.toList: _*)
 }
+
+class RichConfiguration(val configuration: Configuration) extends AnyVal {
+  import configuration._
+
+  def describedAs(newDescription: String) = new Configuration(name, newDescription, isPublic, extendsConfigs, transitive)
+  def extend(configs: Configuration*) = new Configuration(name, description, isPublic, configs.toArray ++ extendsConfigs, transitive)
+  def notTransitive = intransitive
+  def intransitive = new Configuration(name, description, isPublic, extendsConfigs, false)
+  def hide = new Configuration(name, description, false, extendsConfigs, transitive)
+}
+
 /** Represents an Ivy configuration. */
 // final case class Configuration(name: String, description: String, isPublic: Boolean, extendsConfigs: List[Configuration], transitive: Boolean) {
 //   require(name != null && !name.isEmpty)

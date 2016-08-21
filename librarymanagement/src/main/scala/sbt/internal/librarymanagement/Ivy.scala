@@ -31,9 +31,10 @@ import sbt.librarymanagement._
 import ResolverUtil.PluginPattern
 import ivyint.{ CachedResolutionResolveEngine, CachedResolutionResolveCache, SbtDefaultDependencyDescriptor }
 
+import sbt.internal.util.CacheStore
 import sbt.util.InterfaceUtil.m2o
 
-final class IvySbt(val configuration: IvyConfiguration) {
+final class IvySbt(val configuration: IvyConfiguration, fileToStore: File => CacheStore) { self =>
   import configuration.baseDirectory
 
   /*
@@ -94,7 +95,8 @@ final class IvySbt(val configuration: IvyConfiguration) {
           setEventManager(new EventManager())
           if (configuration.updateOptions.cachedResolution) {
             setResolveEngine(new ResolveEngine(getSettings, getEventManager, getSortEngine) with CachedResolutionResolveEngine {
-              val cachedResolutionResolveCache = IvySbt.cachedResolutionResolveCache
+              override private[sbt] val fileToStore: File => CacheStore = self.fileToStore
+              val cachedResolutionResolveCache = IvySbt.cachedResolutionResolveCache(fileToStore)
               val projectResolver = prOpt
               def makeInstance = mkIvy
             })
@@ -141,7 +143,7 @@ final class IvySbt(val configuration: IvyConfiguration) {
     withIvy(log) { i =>
       val prOpt = Option(i.getSettings.getResolver(ProjectResolver.InterProject)) map { case pr: ProjectResolver => pr }
       if (configuration.updateOptions.cachedResolution) {
-        IvySbt.cachedResolutionResolveCache.clean(md, prOpt)
+        IvySbt.cachedResolutionResolveCache(fileToStore).clean(md, prOpt)
       }
     }
 
@@ -239,8 +241,8 @@ private[sbt] object IvySbt {
   val DefaultIvyConfigFilename = "ivysettings.xml"
   val DefaultIvyFilename = "ivy.xml"
   val DefaultMavenFilename = "pom.xml"
-  val DefaultChecksums = Seq("sha1", "md5")
-  private[sbt] val cachedResolutionResolveCache: CachedResolutionResolveCache = new CachedResolutionResolveCache()
+  val DefaultChecksums = Array("sha1", "md5")
+  private[sbt] def cachedResolutionResolveCache(fileToStore: File => CacheStore): CachedResolutionResolveCache = new CachedResolutionResolveCache(fileToStore)
 
   def defaultIvyFile(project: File) = new File(project, DefaultIvyFilename)
   def defaultIvyConfiguration(project: File) = new File(project, DefaultIvyConfigFilename)
@@ -416,7 +418,7 @@ private[sbt] object IvySbt {
   def toID(m: ModuleID) =
     {
       import m._
-      ModuleRevisionId.newInstance(organization, name, branchName.orNull, revision, javaMap(extraAttributes.asScala))
+      ModuleRevisionId.newInstance(organization, name, m2o(branchName).orNull, revision, extraAttributes)
     }
 
   private def substituteCross(m: ModuleSettings): ModuleSettings =
@@ -451,6 +453,7 @@ private[sbt] object IvySbt {
     }
   private[sbt] def extra(artifact: Artifact, unqualify: Boolean = false): java.util.Map[String, String] =
     {
+      import collection.JavaConverters._
       val ea = m2o(artifact.classifier) match {
         case Some(c) =>
           // TODO: What happens if we want to override a value?
@@ -462,7 +465,7 @@ private[sbt] object IvySbt {
           artifact
       }
 
-      javaMap(ea.extraAttributes, unqualify)
+      javaMap(ea.extraAttributes.asScala.toMap, unqualify)
     }
   private[sbt] def javaMap(m: Map[String, String], unqualify: Boolean = false): java.util.Map[String, String] =
     {
@@ -474,12 +477,13 @@ private[sbt] object IvySbt {
   /** Creates a full ivy file for 'module' using the 'dependencies' XML as the part after the &lt;info&gt;...&lt;/info&gt; section. */
   private def wrapped(module: ModuleID, dependencies: NodeSeq) =
     {
+      import scala.collection.JavaConverters._
       <ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
         {
           if (hasInfo(module, dependencies))
             NodeSeq.Empty
           else
-            addExtraAttributes(defaultInfo(module), module.extraAttributes)
+            addExtraAttributes(defaultInfo(module), module.extraAttributes.asScala.toMap)
         }
         { dependencies }
         {
@@ -491,7 +495,7 @@ private[sbt] object IvySbt {
   private[this] def defaultInfo(module: ModuleID): scala.xml.Elem = {
     import module._
     val base = <info organisation={ organization } module={ name } revision={ revision }/>
-    branchName.fold(base) { br => base % new scala.xml.UnprefixedAttribute("branch", br, scala.xml.Null) }
+    m2o(branchName).fold(base) { br => base % new scala.xml.UnprefixedAttribute("branch", br, scala.xml.Null) }
   }
   private[this] def addExtraAttributes(elem: scala.xml.Elem, extra: Map[String, String]): scala.xml.Elem =
     (elem /: extra) { case (e, (key, value)) => e % new scala.xml.UnprefixedAttribute(key, value, scala.xml.Null) }
@@ -532,7 +536,7 @@ private[sbt] object IvySbt {
       val dds = moduleID.getDependencies
       val deps = dds flatMap { dd =>
         val module = toModuleID(dd.getDependencyRevisionId)
-        dd.getModuleConfigurations map (c => module.copy(configurations = Some(c)))
+        dd.getModuleConfigurations map (c => module.withConfigurations(xsbti.Maybe.just(c)))
       }
       inconsistentDuplicateWarning(deps)
     }
@@ -602,7 +606,7 @@ private[sbt] object IvySbt {
       val dependencyDescriptor = new DefaultDependencyDescriptor(moduleID, toID(dependency), dependency.isForce, dependency.isChanging, dependency.isTransitive) with SbtDefaultDependencyDescriptor {
         def dependencyModuleId = dependency
       }
-      dependency.configurations match {
+      m2o(dependency.configurations) match {
         case None => // The configuration for this dependency was not explicitly specified, so use the default
           parser.parseDepsConfs(parser.getDefaultConf, dependencyDescriptor)
         case Some(confs) => // The configuration mapping (looks like: test->default) was specified for this dependency
@@ -670,7 +674,7 @@ private[sbt] object IvySbt {
       val overridden = overrides.map(id => (key(id), id.revision)).toMap
       dependencies map { dep =>
         overridden get key(dep) match {
-          case Some(rev) => dep.copy(revision = rev)
+          case Some(rev) => dep.withRevision(rev)
           case None      => dep
         }
       }

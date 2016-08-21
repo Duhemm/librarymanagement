@@ -44,19 +44,19 @@ class EvictionWarningSpec extends BaseIvySpecification {
   it should "be detected if it's enabled" in scalaLibTransitiveWarn2()
   it should "print out message about the eviction if it's enabled" in scalaLibTransitiveWarn3()
 
-  def akkaActor214 = ModuleID("com.typesafe.akka", "akka-actor", "2.1.4", Some("compile")) cross CrossVersion.binary
-  def akkaActor230 = ModuleID("com.typesafe.akka", "akka-actor", "2.3.0", Some("compile")) cross CrossVersion.binary
-  def akkaActor234 = ModuleID("com.typesafe.akka", "akka-actor", "2.3.4", Some("compile")) cross CrossVersion.binary
-  def scala2102 = ModuleID("org.scala-lang", "scala-library", "2.10.2", Some("compile"))
-  def scala2103 = ModuleID("org.scala-lang", "scala-library", "2.10.3", Some("compile"))
-  def scala2104 = ModuleID("org.scala-lang", "scala-library", "2.10.4", Some("compile"))
-  def commonsIo13 = ModuleID("commons-io", "commons-io", "1.3", Some("compile"))
-  def commonsIo14 = ModuleID("commons-io", "commons-io", "1.4", Some("compile"))
-  def commonsIo24 = ModuleID("commons-io", "commons-io", "2.4", Some("compile"))
-  def bnfparser10 = ModuleID("ca.gobits.bnf", "bnfparser", "1.0", Some("compile")) // uses commons-io 2.4
-  def unfilteredUploads080 = ModuleID("net.databinder", "unfiltered-uploads", "0.8.0", Some("compile")) cross CrossVersion.binary // uses commons-io 1.4
-  def bananaSesame04 = ModuleID("org.w3", "banana-sesame", "0.4", Some("compile")) cross CrossVersion.binary // uses akka-actor 2.1.4
-  def akkaRemote234 = ModuleID("com.typesafe.akka", "akka-remote", "2.3.4", Some("compile")) cross CrossVersion.binary // uses akka-actor 2.3.4
+  def akkaActor214 = new ModuleID("com.typesafe.akka", "akka-actor", "2.1.4").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary
+  def akkaActor230 = new ModuleID("com.typesafe.akka", "akka-actor", "2.3.0").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary
+  def akkaActor234 = new ModuleID("com.typesafe.akka", "akka-actor", "2.3.4").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary
+  def scala2102 = new ModuleID("org.scala-lang", "scala-library", "2.10.2").withConfigurations(xsbti.Maybe.just("compile"))
+  def scala2103 = new ModuleID("org.scala-lang", "scala-library", "2.10.3").withConfigurations(xsbti.Maybe.just("compile"))
+  def scala2104 = new ModuleID("org.scala-lang", "scala-library", "2.10.4").withConfigurations(xsbti.Maybe.just("compile"))
+  def commonsIo13 = new ModuleID("commons-io", "commons-io", "1.3").withConfigurations(xsbti.Maybe.just("compile"))
+  def commonsIo14 = new ModuleID("commons-io", "commons-io", "1.4").withConfigurations(xsbti.Maybe.just("compile"))
+  def commonsIo24 = new ModuleID("commons-io", "commons-io", "2.4").withConfigurations(xsbti.Maybe.just("compile"))
+  def bnfparser10 = new ModuleID("ca.gobits.bnf", "bnfparser", "1.0").withConfigurations(xsbti.Maybe.just("compile")) // uses commons-io 2.4
+  def unfilteredUploads080 = new ModuleID("net.databinder", "unfiltered-uploads", "0.8.0").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary // uses commons-io 1.4
+  def bananaSesame04 = new ModuleID("org.w3", "banana-sesame", "0.4").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary // uses akka-actor 2.1.4
+  def akkaRemote234 = new ModuleID("com.typesafe.akka", "akka-remote", "2.3.4").withConfigurations(xsbti.Maybe.just("compile")) cross CrossVersionUtil.binary // uses akka-actor 2.3.4
 
   def defaultOptions = EvictionWarningOptions.default
 

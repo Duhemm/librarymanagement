@@ -8,6 +8,7 @@ import java.net.URL
 import scala.xml.XML
 import org.apache.ivy.plugins.resolver.DependencyResolver
 import org.xml.sax.SAXParseException
+import sbt.util.InterfaceUtil.o2m
 
 // sealed trait Resolver {
 //   def name: String
@@ -159,12 +160,19 @@ object RepositoryHelpers {
 // }
 /** A repository that conforms to sbt launcher's interface */
 private[sbt] class FakeRepository(resolver: DependencyResolver) extends xsbti.Repository {
-  def rawRepository = new RawRepository(resolver)
+  def rawRepository = new RawRepository(resolver.getName, resolver)
 }
 
-object DefaultMavenRepository extends MavenRepository("public", centralRepositoryRoot(useSecureResolvers))
-object JavaNet2Repository extends MavenRepository(JavaNet2RepositoryName, JavaNet2RepositoryRoot)
-object JCenterRepository extends MavenRepository(JCenterRepositoryName, JCenterRepositoryRoot)
+trait ResolversSyntax {
+  val DefaultMavenRepository = new MavenRepository("public", ResolverUtil.centralRepositoryRoot(ResolverUtil.useSecureResolvers))
+  val JavaNet2Repository = new MavenRepository(ResolverUtil.JavaNet2RepositoryName, ResolverUtil.JavaNet2RepositoryRoot)
+  val JCenterRepository = new MavenRepository(ResolverUtil.JCenterRepositoryName, ResolverUtil.JCenterRepositoryRoot)
+
+}
+
+// object DefaultMavenRepository extends MavenRepository("public", centralRepositoryRoot(useSecureResolvers))
+// object JavaNet2Repository extends MavenRepository(JavaNet2RepositoryName, JavaNet2RepositoryRoot)
+// object JCenterRepository extends MavenRepository(JCenterRepositoryName, JCenterRepositoryRoot)
 
 object ResolverUtil {
   private[sbt] def useSecureResolvers = sys.props.get("sbt.repository.secure") map { _.toLowerCase == "true" } getOrElse true
@@ -201,7 +209,7 @@ object ResolverUtil {
   def sbtPluginRepo(status: String) = url("sbt-plugin-" + status, new URL(SbtPluginRepositoryRoot + "/sbt-plugin-" + status + "/"))(ivyStylePatterns)
   def sonatypeRepo(status: String) = new MavenRepository("sonatype-" + status, SonatypeRepositoryRoot + "/" + status)
   def bintrayRepo(owner: String, repo: String) = new MavenRepository(s"bintray-$owner-$repo", s"https://dl.bintray.com/$owner/$repo/")
-  def bintrayIvyRepo(owner: String, repo: String) = url(s"bintray-$owner-$repo", new URL(s"https://dl.bintray.com/$owner/$repo/"))(Resolver.ivyStylePatterns)
+  def bintrayIvyRepo(owner: String, repo: String) = url(s"bintray-$owner-$repo", new URL(s"https://dl.bintray.com/$owner/$repo/"))(ResolverUtil.ivyStylePatterns)
   def jcenterRepo = JCenterRepository
 
   /** Add the local and Maven Central repositories to the user repositories.  */
@@ -221,7 +229,7 @@ object ResolverUtil {
    * If `mavenCentral` is true, add the Maven Central repository.
    */
   def withDefaultResolvers(userResolvers: Seq[Resolver], jcenter: Boolean, mavenCentral: Boolean): Seq[Resolver] =
-    Seq(Resolver.defaultLocal) ++
+    Seq(ResolverUtil.defaultLocal) ++
       userResolvers ++
       single(JCenterRepository, jcenter) ++
       single(DefaultMavenRepository, mavenCentral)
@@ -232,7 +240,7 @@ object ResolverUtil {
    * If `mavenCentral` is true, add the Maven Central repository.
    */
   private[sbt] def reorganizeAppResolvers(appResolvers: Seq[Resolver], jcenter: Boolean, mavenCentral: Boolean): Seq[Resolver] =
-    appResolvers.partition(_ == Resolver.defaultLocal) match {
+    appResolvers.partition(_ == ResolverUtil.defaultLocal) match {
       case (locals, xs) =>
         locals ++
           (xs.partition(_ == JCenterRepository) match {
@@ -289,15 +297,15 @@ object ResolverUtil {
      * A ManagedProject has an implicit defining these initial patterns based on a setting for either Maven or Ivy style patterns.
      */
     def apply(name: String, hostname: Option[String], port: Option[Int], basePath: Option[String])(implicit basePatterns: Patterns): RepositoryType =
-      construct(name, SshConnection(None, hostname, port), resolvePatterns(basePath, basePatterns))
+      construct(name, new SshConnection(xsbti.Maybe.nothing[SshAuthentication], o2m(hostname), o2m(port.map(x => x: java.lang.Integer))), resolvePatterns(basePath, basePatterns))
   }
   /** A factory to construct an interface to an Ivy SSH resolver.*/
   object ssh extends Define[SshRepository] {
-    protected def construct(name: String, connection: SshConnection, patterns: Patterns) = SshRepository(name, connection, patterns, None)
+    protected def construct(name: String, connection: SshConnection, patterns: Patterns) = new SshRepository(name, patterns, connection, xsbti.Maybe.nothing[String]())
   }
   /** A factory to construct an interface to an Ivy SFTP resolver.*/
   object sftp extends Define[SftpRepository] {
-    protected def construct(name: String, connection: SshConnection, patterns: Patterns) = SftpRepository(name, connection, patterns)
+    protected def construct(name: String, connection: SshConnection, patterns: Patterns) = new SftpRepository(name, patterns, connection)
   }
   /** A factory to construct an interface to an Ivy filesystem resolver. */
   object file {
@@ -305,20 +313,20 @@ object ResolverUtil {
      * Constructs a file resolver with the given name.  The patterns to use must be explicitly specified
      * using the `ivys` or `artifacts` methods on the constructed resolver object.
      */
-    def apply(name: String): FileRepository = FileRepository(name, defaultFileConfiguration, Patterns(false))
+    def apply(name: String): FileRepository = new FileRepository(name, new Patterns(Array.empty, false), defaultFileConfiguration)
     /** Constructs a file resolver with the given name and base directory. */
     def apply(name: String, baseDirectory: File)(implicit basePatterns: Patterns): FileRepository =
-      baseRepository(new File(baseDirectory.toURI.normalize).getAbsolutePath)(FileRepository(name, defaultFileConfiguration, _))
+      baseRepository(new File(baseDirectory.toURI.normalize).getAbsolutePath)(new FileRepository(name, _, defaultFileConfiguration))
   }
   object url {
     /**
      * Constructs a URL resolver with the given name.  The patterns to use must be explicitly specified
      * using the `ivys` or `artifacts` methods on the constructed resolver object.
      */
-    def apply(name: String): URLRepository = URLRepository(name, Patterns(false))
+    def apply(name: String): URLRepository = new URLRepository(name, new Patterns(Array.empty, false))
     /** Constructs a file resolver with the given name and base directory. */
     def apply(name: String, baseURL: URL)(implicit basePatterns: Patterns): URLRepository =
-      baseRepository(baseURL.toURI.normalize.toString)(URLRepository(name, _))
+      baseRepository(baseURL.toURI.normalize.toString)(new URLRepository(name, _))
   }
   private def baseRepository[T](base: String)(construct: Patterns => T)(implicit basePatterns: Patterns): T =
     construct(resolvePatterns(base, basePatterns))
@@ -336,15 +344,15 @@ object ResolverUtil {
   private def resolvePatterns(base: String, basePatterns: Patterns): Patterns =
     {
       def resolveAll(patterns: Seq[String]) = patterns.map(p => resolvePattern(base, p))
-      Patterns(resolveAll(basePatterns.ivyPatterns), resolveAll(basePatterns.artifactPatterns), basePatterns.isMavenCompatible, basePatterns.descriptorOptional, basePatterns.skipConsistencyCheck)
+      new Patterns(resolveAll(basePatterns.ivyPatterns).toArray, resolveAll(basePatterns.artifactPatterns).toArray, basePatterns.isMavenCompatible, basePatterns.descriptorOptional, basePatterns.skipConsistencyCheck)
     }
   private[sbt] def resolvePattern(base: String, pattern: String): String =
     {
       val normBase = base.replace('\\', '/')
       if (normBase.endsWith("/") || pattern.startsWith("/")) normBase + pattern else normBase + "/" + pattern
     }
-  def defaultFileConfiguration = new FileConfiguration(true, xsbti.Maybe.nothing[Boolean])
-  def mavenStylePatterns = new Patterns(Nil, mavenStyleBasePattern :: Nil, true)
+  def defaultFileConfiguration = new FileConfiguration(true, xsbti.Maybe.nothing[java.lang.Boolean])
+  def mavenStylePatterns = new Patterns(Array.empty, Array(mavenStyleBasePattern), true)
   def ivyStylePatterns = defaultIvyPatterns //Patterns(Nil, Nil, false)
 
   def defaultPatterns = mavenStylePatterns
@@ -373,18 +381,18 @@ object ResolverUtil {
       new File(sbt.io.Path.userHome, ".m2/repository")
   }
   // TODO - should this just be the *exact* same as mavenLocal?  probably...
-  def publishMavenLocal: MavenCache = new MavenCache("publish-m2-local", mavenLocalDir)
-  def mavenLocal: MavenRepository = new MavenCache("Maven2 Local", mavenLocalDir)
+  def publishMavenLocal: MavenCache = new MavenCache("publish-m2-local", mavenLocalDir.getAbsolutePath, mavenLocalDir)
+  def mavenLocal: IMavenRepository = new MavenCache("Maven2 Local", mavenLocalDir.getAbsolutePath, mavenLocalDir)
   def defaultLocal = defaultUserFileRepository("local")
   def defaultShared = defaultUserFileRepository("shared")
   def defaultUserFileRepository(id: String) =
     {
-      val pList = s"$${ivy.home}/$id/$localBasePattern" :: Nil
-      new FileRepository(defaultFileConfiguration, new Patterns(pList, pList, false), id)
+      val pList = Array(s"$${ivy.home}/$id/$localBasePattern")
+      new FileRepository(id, new Patterns(pList, pList, false), defaultFileConfiguration)
     }
   def defaultIvyPatterns =
     {
-      val pList = List(localBasePattern)
+      val pList = Array(localBasePattern)
       new Patterns(pList, pList, false, false, false)
     }
 }

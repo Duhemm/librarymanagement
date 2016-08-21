@@ -148,21 +148,26 @@ object IvyRetrieve {
     val (resolved, missing) = artifacts(moduleId, confReport getDownloadReports revId)
 
     new ModuleReport(moduleId, resolved, missing, o2m(status), o2m(publicationDate), o2m(resolver), o2m(artifactResolver),
-      evicted, o2m(evictedData), o2m(evictedReason), o2m(problem), o2m(homepage), extraAttributes.asJava, o2m(isDefault), o2m(branch),
+      evicted, o2m(evictedData), o2m(evictedReason), o2m(problem), o2m(homepage), extraAttributes.asJava, o2m(isDefault.asInstanceOf[Option[java.lang.Boolean]]), o2m(branch),
       configurations, licenses, callers)
   }
 
   def evicted(confReport: ConfigurationResolveReport): Seq[ModuleID] =
     confReport.getEvictedNodes.map(node => toModuleID(node.getId))
 
-  def toModuleID(revID: ModuleRevisionId): ModuleID =
-    ModuleID(revID.getOrganisation, revID.getName, revID.getRevision, extraAttributes = IvySbt.getExtraAttributes(revID))
-      .branch(nonEmptyString(revID.getBranch))
+  def toModuleID(revID: ModuleRevisionId): ModuleID = {
+    import scala.collection.JavaConverters._
+    new ModuleID(revID.getOrganisation, revID.getName, revID.getRevision)
+      .withExtraAttributes(IvySbt.getExtraAttributes(revID).asJava)
+      .withBranchName(o2m(nonEmptyString(revID.getBranch)))
+  }
+  // ModuleID(revID.getOrganisation, revID.getName, revID.getRevision, extraAttributes = IvySbt.getExtraAttributes(revID))
+  //   .branch(nonEmptyString(revID.getBranch))
 
   def toArtifact(art: IvyArtifact): Artifact =
     {
       import art._
-      new Artifact(getName, getType, getExt, Option(getExtraAttribute("classifier")), getConfigurations map Configurations.config, Option(getUrl))
+      new Artifact(getName, getType, getExt, xsbti.Maybe.just(getExtraAttribute("classifier")), getConfigurations map Configurations.config, xsbti.Maybe.just(getUrl), new java.util.HashMap[String, String]())
     }
 
   def updateReport(report: ResolveReport, cachedDescriptor: File): UpdateReport =

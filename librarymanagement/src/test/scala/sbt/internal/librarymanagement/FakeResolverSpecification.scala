@@ -9,10 +9,10 @@ import sbt.librarymanagement.{ ModuleID, RawRepository, Resolver, UpdateReport }
 class FakeResolverSpecification extends BaseIvySpecification {
   import FakeResolver._
 
-  val myModule = ModuleID("org.example", "my-module", "0.0.1-SNAPSHOT", Some("compile"))
-  val example = ModuleID("com.example", "example", "1.0.0", Some("compile"))
-  val anotherExample = ModuleID("com.example", "another-example", "1.0.0", Some("compile"))
-  val nonExisting = ModuleID("com.example", "does-not-exist", "1.2.3", Some("compile"))
+  val myModule = new ModuleID("org.example", "my-module", "0.0.1-SNAPSHOT").withConfigurations(xsbti.Maybe.just("compile"))
+  val example = new ModuleID("com.example", "example", "1.0.0").withConfigurations(xsbti.Maybe.just("compile"))
+  val anotherExample = new ModuleID("com.example", "another-example", "1.0.0").withConfigurations(xsbti.Maybe.just("compile"))
+  val nonExisting = new ModuleID("com.example", "does-not-exist", "1.2.3").withConfigurations(xsbti.Maybe.just("compile"))
 
   "The FakeResolver" should "find modules with only one artifact" in {
     val m = getModule(myModule)
@@ -66,13 +66,13 @@ class FakeResolverSpecification extends BaseIvySpecification {
   )
 
   private def fakeResolver = new FakeResolver("FakeResolver", new File("tmp"), modules)
-  override def resolvers: Seq[Resolver] = Seq(new RawRepository(fakeResolver))
+  override def resolvers: Seq[Resolver] = Seq(new RawRepository(fakeResolver.getName, fakeResolver))
   private def getModule(myModule: ModuleID): IvySbt#Module = module(defaultModuleId, Seq(myModule), None)
   private def getAllFiles(report: UpdateReport) =
     for {
       conf <- report.configurations
       m <- conf.modules
-      (_, f) <- m.artifacts
-    } yield f
+      artFile <- m.artifacts
+    } yield artFile.get2
 
 }

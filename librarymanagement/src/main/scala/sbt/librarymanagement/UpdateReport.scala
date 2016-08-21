@@ -4,8 +4,8 @@
 package sbt.librarymanagement
 
 import java.io.File
-import java.{ util => ju }
-import sbt.serialization._
+
+import sbt.util.InterfaceUtil.{ m2o, t2 }
 
 /**
  * Provides information about resolution of a single configuration.
@@ -36,7 +36,7 @@ final class ConfigurationReport(
     val module = mr.module
     if (module.configurations.isEmpty) {
       val conf = mr.configurations map (c => s"$configuration->$c") mkString ";"
-      module.copy(configurations = Some(conf))
+      module.withConfigurations(xsbti.Maybe.just(conf))
     } else module
   }
 
@@ -44,7 +44,7 @@ final class ConfigurationReport(
     new ConfigurationReport(configuration, modules map { _.retrieve((mid, art, file) => f(configuration, mid, art, file)) }, details)
 }
 object ConfigurationReport {
-  implicit val pickler: Pickler[ConfigurationReport] with Unpickler[ConfigurationReport] = PicklerUnpickler.generate[ConfigurationReport]
+  // implicit val pickler: Pickler[ConfigurationReport] with Unpickler[ConfigurationReport] = PicklerUnpickler.generate[ConfigurationReport]
 }
 
 /**
@@ -103,51 +103,58 @@ object ConfigurationReport {
 //   val callers: Seq[Caller]
 // ) {
 
-//   private[this] lazy val arts: Seq[String] = artifacts.map(_.toString) ++ missingArtifacts.map(art => "(MISSING) " + art)
-//   override def toString: String = {
-//     s"\t\t$module: " +
-//       (if (arts.size <= 1) "" else "\n\t\t\t") + arts.mkString("\n\t\t\t") + "\n"
-//   }
-//   def detailReport: String =
-//     s"\t\t- ${module.revision}\n" +
-//       (if (arts.size <= 1) "" else arts.mkString("\t\t\t", "\n\t\t\t", "\n")) +
-//       reportStr("status", status) +
-//       reportStr("publicationDate", publicationDate map { _.toString }) +
-//       reportStr("resolver", resolver) +
-//       reportStr("artifactResolver", artifactResolver) +
-//       reportStr("evicted", Some(evicted.toString)) +
-//       reportStr("evictedData", evictedData) +
-//       reportStr("evictedReason", evictedReason) +
-//       reportStr("problem", problem) +
-//       reportStr("homepage", homepage) +
-//       reportStr(
-//         "textraAttributes",
-//         if (extraAttributes.isEmpty) None
-//         else { Some(extraAttributes.toString) }
-//       ) +
-//         reportStr("isDefault", isDefault map { _.toString }) +
-//         reportStr("branch", branch) +
-//         reportStr(
-//           "configurations",
-//           if (configurations.isEmpty) None
-//           else { Some(configurations.mkString(", ")) }
-//         ) +
-//           reportStr(
-//             "licenses",
-//             if (licenses.isEmpty) None
-//             else { Some(licenses.mkString(", ")) }
-//           ) +
-//             reportStr(
-//               "callers",
-//               if (callers.isEmpty) None
-//               else { Some(callers.mkString(", ")) }
-//             )
-//   private[sbt] def reportStr(key: String, value: Option[String]): String =
-//     value map { x => s"\t\t\t$key: $x\n" } getOrElse ""
+class RichModuleReport(val moduleReport: ModuleReport) extends AnyVal {
+  import sbt.internal.util.ShowLines._
+  import moduleReport._
 
-//   def retrieve(f: (ModuleID, Artifact, File) => File): ModuleReport =
-//     copy(artifacts = artifacts.map { case (art, file) => (art, f(module, art, file)) })
-// }
+  private[this] def arts: Seq[String] = artifacts.map(_.toString) ++ missingArtifacts.map(art => "(MISSING) " + art)
+  override def toString: String = {
+    s"\t\t${module.lines.mkString}: " +
+      (if (arts.size <= 1) "" else "\n\t\t\t") + arts.mkString("\n\t\t\t") + "\n"
+  }
+  def detailReport: String =
+    s"\t\t- ${module.revision}\n" +
+      (if (arts.size <= 1) "" else arts.mkString("\t\t\t", "\n\t\t\t", "\n")) +
+      reportStr("status", m2o(status)) +
+      reportStr("publicationDate", m2o(publicationDate) map { _.toString }) +
+      reportStr("resolver", m2o(resolver)) +
+      reportStr("artifactResolver", m2o(artifactResolver)) +
+      reportStr("evicted", Some(evicted.toString)) +
+      reportStr("evictedData", m2o(evictedData)) +
+      reportStr("evictedReason", m2o(evictedReason)) +
+      reportStr("problem", m2o(problem)) +
+      reportStr("homepage", m2o(homepage)) +
+      reportStr(
+        "textraAttributes",
+        if (extraAttributes.isEmpty) None
+        else { Some(extraAttributes.toString) }
+      ) +
+        reportStr("isDefault", m2o(isDefault) map { _.toString }) +
+        reportStr("branch", m2o(branch)) +
+        reportStr(
+          "configurations",
+          if (configurations.isEmpty) None
+          else { Some(configurations.mkString(", ")) }
+        ) +
+          reportStr(
+            "licenses",
+            if (licenses.isEmpty) None
+            else { Some(licenses.mkString(", ")) }
+          ) +
+            reportStr(
+              "callers",
+              if (callers.isEmpty) None
+              else { Some(callers.mkString(", ")) }
+            )
+  private[sbt] def reportStr(key: String, value: Option[String]): String =
+    value map { x => s"\t\t\t$key: $x\n" } getOrElse ""
+
+  def retrieve(f: (ModuleID, Artifact, File) => File): ModuleReport =
+    withArtifacts(artifacts.map { artFile =>
+      val (art, file) = (artFile.get1, artFile.get2)
+      t2((art, f(module, art, file)))
+    })
+}
 
 // object ModuleReport {
 //   def apply(module: ModuleID, artifacts: Seq[(Artifact, File)], missingArtifacts: Seq[Artifact]): ModuleReport =
@@ -195,12 +202,12 @@ final class UpdateReport(val cachedDescriptor: File, val configurations: Seq[Con
       configurations.flatMap(_.allModules).groupBy(key).toSeq map {
         case (k, v) =>
           v reduceLeft { (agg, x) =>
-            agg.copy(
-              configurations = (agg.configurations, x.configurations) match {
-              case (None, _)            => x.configurations
-              case (Some(ac), None)     => Some(ac)
-              case (Some(ac), Some(xc)) => Some(s"$ac;$xc")
-            }
+            agg.withConfigurations(
+              (m2o(agg.configurations), m2o(x.configurations)) match {
+                case (None, _)            => x.configurations
+                case (Some(ac), None)     => xsbti.Maybe.just(ac)
+                case (Some(ac), Some(xc)) => xsbti.Maybe.just(s"$ac;$xc")
+              }
             )
           }
       }
@@ -225,58 +232,58 @@ final class UpdateReport(val cachedDescriptor: File, val configurations: Seq[Con
 }
 
 object UpdateReport {
-  private val vectorConfigurationReportPickler = implicitly[Pickler[Vector[ConfigurationReport]]]
-  private val vectorConfigurationReportUnpickler = implicitly[Unpickler[Vector[ConfigurationReport]]]
-  private val updateStatsPickler = implicitly[Pickler[UpdateStats]]
-  private val updateStatsUnpickler = implicitly[Unpickler[UpdateStats]]
-  private val flMapPickler = implicitly[Pickler[Map[File, Long]]]
-  private val flMapUnpickler = implicitly[Unpickler[Map[File, Long]]]
+  // private val vectorConfigurationReportPickler = implicitly[Pickler[Vector[ConfigurationReport]]]
+  // private val vectorConfigurationReportUnpickler = implicitly[Unpickler[Vector[ConfigurationReport]]]
+  // private val updateStatsPickler = implicitly[Pickler[UpdateStats]]
+  // private val updateStatsUnpickler = implicitly[Unpickler[UpdateStats]]
+  // private val flMapPickler = implicitly[Pickler[Map[File, Long]]]
+  // private val flMapUnpickler = implicitly[Unpickler[Map[File, Long]]]
 
-  implicit val pickler: Pickler[UpdateReport] with Unpickler[UpdateReport] = new Pickler[UpdateReport] with Unpickler[UpdateReport] {
-    val tag = implicitly[FastTypeTag[UpdateReport]]
-    val fileTag = implicitly[FastTypeTag[File]]
-    val vectorConfigurationReportTag = implicitly[FastTypeTag[Vector[ConfigurationReport]]]
-    val updateStatsTag = implicitly[FastTypeTag[UpdateStats]]
-    val flMapTag = implicitly[FastTypeTag[Map[File, Long]]]
-    def pickle(a: UpdateReport, builder: PBuilder): Unit = {
-      builder.pushHints()
-      builder.hintTag(tag)
-      builder.beginEntry(a)
-      builder.putField("cachedDescriptor", { b =>
-        b.hintTag(fileTag)
-        filePickler.pickle(a.cachedDescriptor, b)
-      })
-      builder.putField("configurations", { b =>
-        b.hintTag(vectorConfigurationReportTag)
-        vectorConfigurationReportPickler.pickle(a.configurations.toVector, b)
-      })
-      builder.putField("stats", { b =>
-        b.hintTag(updateStatsTag)
-        updateStatsPickler.pickle(a.stats, b)
-      })
-      builder.putField("stamps", { b =>
-        b.hintTag(flMapTag)
-        flMapPickler.pickle(a.stamps, b)
-      })
-      builder.endEntry()
-      builder.popHints()
-      ()
-    }
+  // implicit val pickler: Pickler[UpdateReport] with Unpickler[UpdateReport] = new Pickler[UpdateReport] with Unpickler[UpdateReport] {
+  //   val tag = implicitly[FastTypeTag[UpdateReport]]
+  //   val fileTag = implicitly[FastTypeTag[File]]
+  //   val vectorConfigurationReportTag = implicitly[FastTypeTag[Vector[ConfigurationReport]]]
+  //   val updateStatsTag = implicitly[FastTypeTag[UpdateStats]]
+  //   val flMapTag = implicitly[FastTypeTag[Map[File, Long]]]
+  //   def pickle(a: UpdateReport, builder: PBuilder): Unit = {
+  //     builder.pushHints()
+  //     builder.hintTag(tag)
+  //     builder.beginEntry(a)
+  //     builder.putField("cachedDescriptor", { b =>
+  //       b.hintTag(fileTag)
+  //       filePickler.pickle(a.cachedDescriptor, b)
+  //     })
+  //     builder.putField("configurations", { b =>
+  //       b.hintTag(vectorConfigurationReportTag)
+  //       vectorConfigurationReportPickler.pickle(a.configurations.toVector, b)
+  //     })
+  //     builder.putField("stats", { b =>
+  //       b.hintTag(updateStatsTag)
+  //       updateStatsPickler.pickle(a.stats, b)
+  //     })
+  //     builder.putField("stamps", { b =>
+  //       b.hintTag(flMapTag)
+  //       flMapPickler.pickle(a.stamps, b)
+  //     })
+  //     builder.endEntry()
+  //     builder.popHints()
+  //     ()
+  //   }
 
-    def unpickle(tpe: String, reader: PReader): Any = {
-      reader.pushHints()
-      reader.hintTag(tag)
-      reader.beginEntry()
-      val cachedDescriptor = filePickler.unpickleEntry(reader.readField("cachedDescriptor")).asInstanceOf[File]
-      val configurations = vectorConfigurationReportUnpickler.unpickleEntry(reader.readField("configurations")).asInstanceOf[Vector[ConfigurationReport]]
-      val stats = updateStatsUnpickler.unpickleEntry(reader.readField("stats")).asInstanceOf[UpdateStats]
-      val stamps = flMapUnpickler.unpickleEntry(reader.readField("stamps")).asInstanceOf[Map[File, Long]]
-      val result = new UpdateReport(cachedDescriptor, configurations, stats, stamps)
-      reader.endEntry()
-      reader.popHints()
-      result
-    }
-  }
+  //   def unpickle(tpe: String, reader: PReader): Any = {
+  //     reader.pushHints()
+  //     reader.hintTag(tag)
+  //     reader.beginEntry()
+  //     val cachedDescriptor = filePickler.unpickleEntry(reader.readField("cachedDescriptor")).asInstanceOf[File]
+  //     val configurations = vectorConfigurationReportUnpickler.unpickleEntry(reader.readField("configurations")).asInstanceOf[Vector[ConfigurationReport]]
+  //     val stats = updateStatsUnpickler.unpickleEntry(reader.readField("stats")).asInstanceOf[UpdateStats]
+  //     val stamps = flMapUnpickler.unpickleEntry(reader.readField("stamps")).asInstanceOf[Map[File, Long]]
+  //     val result = new UpdateReport(cachedDescriptor, configurations, stats, stamps)
+  //     reader.endEntry()
+  //     reader.popHints()
+  //     result
+  //   }
+  // }
 }
 
 // final class UpdateStats(val resolveTime: Long, val downloadTime: Long, val downloadSize: Long, val cached: Boolean) {
