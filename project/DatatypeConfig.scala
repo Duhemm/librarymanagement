@@ -39,6 +39,8 @@ object DatatypeConfig {
       { tpe => "sbt.internal.librarymanagement.formats.MyBooleanFormat" :: Nil }
     case "java.lang.Integer" =>
       { tpe => "sbt.internal.librarymanagement.formats.MyIntegerFormat" :: Nil }
+    case "java.lang.Long" =>
+      { tpe => "sbt.internal.librarymanagement.formats.MyLongFormat" :: Nil }
     case "java.util.Date" =>
       { tpe => "sbt.internal.librarymanagement.formats.DateFormat" :: Nil }
     case "java.util.Map" =>

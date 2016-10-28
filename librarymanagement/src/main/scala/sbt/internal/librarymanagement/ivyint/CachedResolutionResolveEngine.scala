@@ -409,7 +409,7 @@ private[sbt] trait CachedResolutionResolveEngine extends ResolveEngine {
         val crs = reports flatMap { _.configurations filter { _.configuration == conf.getName } }
         mergeConfigurationReports(conf.getName, crs, os, log)
       }
-      new UpdateReport(cachedDescriptor, configReports, stats, Map.empty)
+      new UpdateReport(cachedDescriptor, configReports.toArray, stats, new java.util.HashMap[File, java.lang.Long]())
     }
   // memory usage 62%, of which 58% is in mergeOrganizationArtifactReports
   def mergeConfigurationReports(rootModuleConf: String, reports: Vector[ConfigurationReport], os: Vector[IvyOverride], log: Logger): ConfigurationReport =
@@ -421,7 +421,7 @@ private[sbt] trait CachedResolutionResolveEngine extends ResolveEngine {
           !mr.evicted && mr.problem.isEmpty
         }
       }
-      new ConfigurationReport(rootModuleConf, modules, details)
+      new ConfigurationReport(rootModuleConf, modules.toArray, details.toArray)
     }
   /**
    * Returns a tuple of (merged org + name combo, newly evicted modules)
@@ -762,7 +762,7 @@ private[sbt] trait CachedResolutionResolveEngine extends ResolveEngine {
         }
         mergeConfigurationReports(conf0.getName, remappedCRs, os, log)
       }
-      new UpdateReport(ur.cachedDescriptor, configurations, ur.stats, ur.stamps)
+      new UpdateReport(ur.cachedDescriptor, configurations.toArray, ur.stats, ur.stamps)
     }
 }
 

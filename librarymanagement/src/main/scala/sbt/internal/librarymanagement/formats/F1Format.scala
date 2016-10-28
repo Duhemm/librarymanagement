@@ -6,6 +6,6 @@ import xsbti.F1
 trait F1Format { self: sjsonnew.BasicJsonProtocol =>
 
   implicit def F1Format[T, U]: JsonFormat[F1[T, U]] =
-    project(MyCrazyReferences.referenced _, MyCrazyReferences.apply _)
+    project(MyCrazyReferences.referenced _, (ref: String) => MyCrazyReferences.apply(ref, classOf[F1[T, U]]))
 
 }

@@ -5,7 +5,7 @@ object Dependencies {
   lazy val scala211 = "2.11.8"
 
   val ioVersion = "1.0.0-M6"
-  val utilVersion = "0.1.0-M13-0ecfde6fcc51056daf45aeabe0940711839ff675"
+  val utilVersion = "0.1.0-M13-64a648656cd48ff2d5a1e078df1eb2ebf55cd4dd"
   lazy val sbtIO = "org.scala-sbt" %% "io" % ioVersion
   lazy val utilCollection = "org.scala-sbt" %% "util-collection" % utilVersion
   lazy val utilLogging = "org.scala-sbt" %% "util-logging" % utilVersion

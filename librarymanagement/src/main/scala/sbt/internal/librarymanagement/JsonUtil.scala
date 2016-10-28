@@ -94,7 +94,7 @@ private[sbt] class JsonUtil(fileToStore: File => CacheStore) {
         }
         new ConfigurationReport(cr.configuration, modules, details)
       }
-      new UpdateReport(cachedDescriptor, configReports, stats, Map.empty)
+      new UpdateReport(cachedDescriptor, configReports, stats, new java.util.HashMap[File, java.lang.Long]())
     }
 }
 

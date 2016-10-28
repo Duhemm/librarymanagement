@@ -171,11 +171,11 @@ object IvyRetrieve {
     }
 
   def updateReport(report: ResolveReport, cachedDescriptor: File): UpdateReport =
-    new UpdateReport(cachedDescriptor, reports(report) map configurationReport, updateStats(report), Map.empty) recomputeStamps ()
+    new UpdateReport(cachedDescriptor, reports(report).toArray map configurationReport, updateStats(report), new java.util.HashMap[File, java.lang.Long]) recomputeStamps ()
   def updateStats(report: ResolveReport): UpdateStats =
     new UpdateStats(report.getResolveTime, report.getDownloadTime, report.getDownloadSize, false)
   def configurationReport(confReport: ConfigurationResolveReport): ConfigurationReport =
-    new ConfigurationReport(confReport.getConfiguration, moduleReports(confReport), organizationArtifactReports(confReport))
+    new ConfigurationReport(confReport.getConfiguration, moduleReports(confReport).toArray, organizationArtifactReports(confReport).toArray)
 
   /**
    * Tries to find Ivy graph path the from node to target.

@@ -6,6 +6,6 @@ import xsbti.GlobalLock
 trait GlobalLockFormat { self: sjsonnew.BasicJsonProtocol =>
 
   implicit lazy val GlobalLockFormat: JsonFormat[GlobalLock] =
-    project(MyCrazyReferences.referenced _, MyCrazyReferences.apply _)
+    project(MyCrazyReferences.referenced _, (ref: String) => MyCrazyReferences.apply(ref, classOf[GlobalLock]))
 
 }

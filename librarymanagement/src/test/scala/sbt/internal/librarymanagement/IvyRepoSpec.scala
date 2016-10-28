@@ -3,6 +3,7 @@ package sbt.internal.librarymanagement
 import org.scalatest.Inside
 import sbt.internal.librarymanagement.impl.DependencyBuilders
 import sbt.librarymanagement._
+import syntax._
 
 import sbt.util.InterfaceUtil.m2o
 
@@ -30,7 +31,7 @@ class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
 
     import Inside._
     inside(report.configuration("compile").map(_.modules)) {
-      case Some(Seq(mr)) =>
+      case Some(Array(mr)) =>
         inside(mr.artifacts) {
           case Array(artFile) =>
             val ar = artFile.get1
@@ -73,7 +74,7 @@ class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
 
     import Inside._
     inside(report2.configuration("compile").map(_.modules)) {
-      case Some(Seq(mr)) =>
+      case Some(Array(mr)) =>
         inside(mr.artifacts) {
           case Array(artFile) =>
             val ar = artFile.get1

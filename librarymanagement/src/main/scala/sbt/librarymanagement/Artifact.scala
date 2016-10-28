@@ -10,7 +10,7 @@ import java.net.URL
 //   def extra(attributes: (String, String)*) = copy(extraAttributes = extraAttributes ++ ModuleID.checkE(attributes))
 // }
 
-import Configurations.Pom
+import Configurations.{ Optional, Pom, Test }
 
 import sbt.util.InterfaceUtil.{ m2o, o2m }
 
@@ -90,6 +90,12 @@ object ArtifactUtil {
     }
 
   val classifierTypeMap = Map(SourceClassifier -> SourceType, DocClassifier -> DocType)
+  @deprecated("Configuration should not be decided from the classifier.", "1.0")
+  def classifierConf(classifier: String): Configuration =
+    if (classifier.startsWith(TestsClassifier))
+      Test
+    else
+      Optional
   def classifierType(classifier: String): String = classifierTypeMap.getOrElse(classifier.stripPrefix(TestsClassifier + "-"), DefaultType)
 
   /**

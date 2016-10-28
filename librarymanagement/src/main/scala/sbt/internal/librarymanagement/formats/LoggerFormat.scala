@@ -6,6 +6,6 @@ import xsbti.Logger
 trait LoggerFormat { self: sjsonnew.BasicJsonProtocol =>
 
   implicit lazy val LoggerFormat: JsonFormat[Logger] =
-    project(MyCrazyReferences.referenced _, MyCrazyReferences.apply _)
+    project(MyCrazyReferences.referenced _, (ref: String) => MyCrazyReferences.apply(ref, classOf[Logger]))
 
 }

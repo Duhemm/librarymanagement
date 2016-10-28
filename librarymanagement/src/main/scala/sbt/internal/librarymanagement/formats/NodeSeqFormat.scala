@@ -6,6 +6,6 @@ import scala.xml.NodeSeq
 trait NodeSeqFormat { self: sjsonnew.BasicJsonProtocol =>
 
   implicit lazy val NodeSeqFormat: JsonFormat[NodeSeq] =
-    project(MyCrazyReferences.referenced _, MyCrazyReferences.apply _)
+    project(MyCrazyReferences.referenced _, (ref: String) => MyCrazyReferences.apply(ref, classOf[NodeSeq]))
 
 }
