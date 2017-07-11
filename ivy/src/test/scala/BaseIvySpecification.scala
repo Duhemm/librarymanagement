@@ -15,7 +15,7 @@ trait BaseIvySpecification extends UnitSpec {
   def currentManaged: File = currentBase / "target" / "lib_managed"
   def currentDependency: File = currentBase / "target" / "dependency"
   def defaultModuleId: ModuleID =
-    ModuleID("com.example", "foo", "0.1.0").withConfigurations(Some("compile"))
+    ModuleID("com.example", "foo", "0.1.0").withConfigurations(Vector("compile"))
 
   lazy val log = ConsoleLogger()
   def lmEngine(uo: UpdateOptions = UpdateOptions()): LibraryManagement =

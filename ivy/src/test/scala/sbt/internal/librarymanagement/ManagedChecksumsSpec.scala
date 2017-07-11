@@ -18,7 +18,7 @@ class ManagedChecksumsSpec extends BaseIvySpecification with DependencyBuilders 
   def dataAvro1940 = ModuleID("com.linkedin.pegasus", "data-avro", "1.9.40")
   def netty320 = ModuleID("org.jboss.netty", "netty", "3.2.0.Final")
   final def dependencies: Vector[ModuleID] =
-    Vector(avro177, dataAvro1940, netty320).map(_.withConfigurations(Some("compile")))
+    Vector(avro177, dataAvro1940, netty320).map(_.withConfigurations(Vector("compile")))
 
   import sbt.io.syntax._
   override def mkIvyConfiguration(uo: UpdateOptions): IvyConfiguration = {

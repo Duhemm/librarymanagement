@@ -40,11 +40,8 @@ private[sbt] object CompatibilityWarning {
       log: Logger
   ): Unit = {
     val monitoredConfigsStr: Set[String] = (config.configurations map { _.name }).toSet
-    def inMonitoredConfigs(configOpt: Option[String]): Boolean =
-      configOpt match {
-        case Some(c) => (c.split(",").toSet intersect monitoredConfigsStr).nonEmpty
-        case None    => monitoredConfigsStr contains "compile"
-      }
+    def inMonitoredConfigs(configs: Vector[String]): Boolean =
+      configs.toSet.intersect(monitoredConfigsStr).nonEmpty
     module.directDependencies foreach { m =>
       if (!m.isTransitive && inMonitoredConfigs(m.configurations)) {
         log.warn(

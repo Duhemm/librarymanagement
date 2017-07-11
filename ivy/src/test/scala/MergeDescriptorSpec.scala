@@ -9,7 +9,7 @@ class MergeDescriptorSpec extends BaseIvySpecification {
   "Merging duplicate dependencies" should "work" in {
     cleanIvyCache()
     val m = module(
-      ModuleID("com.example", "foo", "0.1.0").withConfigurations(Some("compile")),
+      ModuleID("com.example", "foo", "0.1.0").withConfigurations(Vector("compile")),
       Vector(guavaTest, guavaTestTests),
       None,
       UpdateOptions()
@@ -31,10 +31,10 @@ class MergeDescriptorSpec extends BaseIvySpecification {
     }
   }
   def guavaTest =
-    ModuleID("com.google.guava", "guava-tests", "18.0").withConfigurations(Option("compile"))
+    ModuleID("com.google.guava", "guava-tests", "18.0").withConfigurations(Vector("compile"))
   def guavaTestTests =
     ModuleID("com.google.guava", "guava-tests", "18.0")
-      .withConfigurations(Option("test"))
+      .withConfigurations(Vector("test"))
       .classifier("tests")
   def defaultOptions = EvictionWarningOptions.default
 

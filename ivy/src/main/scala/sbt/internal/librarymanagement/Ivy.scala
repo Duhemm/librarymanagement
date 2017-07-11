@@ -721,7 +721,7 @@ private[sbt] object IvySbt {
     val dds = moduleID.getDependencies
     val deps = dds flatMap { dd =>
       val module = toModuleID(dd.getDependencyRevisionId)
-      dd.getModuleConfigurations map (c => module.withConfigurations(Some(c)))
+      dd.getModuleConfigurations map (c => module.withConfigurations(Vector(c)))
     }
     inconsistentDuplicateWarning(deps)
   }
@@ -812,10 +812,10 @@ private[sbt] object IvySbt {
       def dependencyModuleId = dependency
     }
     dependency.configurations match {
-      case None => // The configuration for this dependency was not explicitly specified, so use the default
+      case Vector() => // The configuration for this dependency was not explicitly specified, so use the default
         parser.parseDepsConfs(parser.getDefaultConf, dependencyDescriptor)
-      case Some(confs) => // The configuration mapping (looks like: test->default) was specified for this dependency
-        parser.parseDepsConfs(confs, dependencyDescriptor)
+      case confs => // The configuration mapping (looks like: test->default) was specified for this dependency
+        parser.parseDepsConfs(confs.mkString(","), dependencyDescriptor)
     }
     for (artifact <- dependency.explicitArtifacts) {
       import artifact.{ name, `type`, extension, url }

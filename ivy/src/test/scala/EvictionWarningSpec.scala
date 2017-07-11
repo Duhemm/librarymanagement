@@ -43,28 +43,31 @@ class EvictionWarningSpec extends BaseIvySpecification {
   it should "print out message about the eviction if it's enabled" in scalaLibTransitiveWarn3()
 
   def akkaActor214 =
-    ModuleID("com.typesafe.akka", "akka-actor", "2.1.4").withConfigurations(Some("compile")) cross CrossVersion.binary
+    ModuleID("com.typesafe.akka", "akka-actor", "2.1.4").withConfigurations(Vector("compile")) cross CrossVersion.binary
   def akkaActor230 =
-    ModuleID("com.typesafe.akka", "akka-actor", "2.3.0").withConfigurations(Some("compile")) cross CrossVersion.binary
+    ModuleID("com.typesafe.akka", "akka-actor", "2.3.0").withConfigurations(Vector("compile")) cross CrossVersion.binary
   def akkaActor234 =
-    ModuleID("com.typesafe.akka", "akka-actor", "2.3.4").withConfigurations(Some("compile")) cross CrossVersion.binary
+    ModuleID("com.typesafe.akka", "akka-actor", "2.3.4").withConfigurations(Vector("compile")) cross CrossVersion.binary
   def scala2102 =
-    ModuleID("org.scala-lang", "scala-library", "2.10.2").withConfigurations(Some("compile"))
+    ModuleID("org.scala-lang", "scala-library", "2.10.2").withConfigurations(Vector("compile"))
   def scala2103 =
-    ModuleID("org.scala-lang", "scala-library", "2.10.3").withConfigurations(Some("compile"))
+    ModuleID("org.scala-lang", "scala-library", "2.10.3").withConfigurations(Vector("compile"))
   def scala2104 =
-    ModuleID("org.scala-lang", "scala-library", "2.10.4").withConfigurations(Some("compile"))
-  def commonsIo13 = ModuleID("commons-io", "commons-io", "1.3").withConfigurations(Some("compile"))
-  def commonsIo14 = ModuleID("commons-io", "commons-io", "1.4").withConfigurations(Some("compile"))
-  def commonsIo24 = ModuleID("commons-io", "commons-io", "2.4").withConfigurations(Some("compile"))
+    ModuleID("org.scala-lang", "scala-library", "2.10.4").withConfigurations(Vector("compile"))
+  def commonsIo13 =
+    ModuleID("commons-io", "commons-io", "1.3").withConfigurations(Vector("compile"))
+  def commonsIo14 =
+    ModuleID("commons-io", "commons-io", "1.4").withConfigurations(Vector("compile"))
+  def commonsIo24 =
+    ModuleID("commons-io", "commons-io", "2.4").withConfigurations(Vector("compile"))
   def bnfparser10 =
-    ModuleID("ca.gobits.bnf", "bnfparser", "1.0").withConfigurations(Some("compile")) // uses commons-io 2.4
+    ModuleID("ca.gobits.bnf", "bnfparser", "1.0").withConfigurations(Vector("compile")) // uses commons-io 2.4
   def unfilteredUploads080 =
-    ModuleID("net.databinder", "unfiltered-uploads", "0.8.0").withConfigurations(Some("compile")) cross CrossVersion.binary // uses commons-io 1.4
+    ModuleID("net.databinder", "unfiltered-uploads", "0.8.0").withConfigurations(Vector("compile")) cross CrossVersion.binary // uses commons-io 1.4
   def bananaSesame04 =
-    ModuleID("org.w3", "banana-sesame", "0.4").withConfigurations(Some("compile")) cross CrossVersion.binary // uses akka-actor 2.1.4
+    ModuleID("org.w3", "banana-sesame", "0.4").withConfigurations(Vector("compile")) cross CrossVersion.binary // uses akka-actor 2.1.4
   def akkaRemote234 =
-    ModuleID("com.typesafe.akka", "akka-remote", "2.3.4").withConfigurations(Some("compile")) cross CrossVersion.binary // uses akka-actor 2.3.4
+    ModuleID("com.typesafe.akka", "akka-remote", "2.3.4").withConfigurations(Vector("compile")) cross CrossVersion.binary // uses akka-actor 2.3.4
 
   def defaultOptions = EvictionWarningOptions.default
 
@@ -105,8 +108,8 @@ class EvictionWarningSpec extends BaseIvySpecification {
       List(
         "Scala version was updated by one of library dependencies:",
         "\t* org.scala-lang:scala-library:2.10.3 is selected over 2.10.2",
-        "\t    +- com.typesafe.akka:akka-actor_2.10:2.3.0            (depends on 2.10.3)",
-        "\t    +- com.example:foo:0.1.0                              (depends on 2.10.2)",
+        "\t    +- com.typesafe.akka:akka-actor_2.10:2.3.0:compile    (depends on 2.10.3)",
+        "\t    +- com.example:foo:0.1.0:compile                      (depends on 2.10.2)",
         "",
         "To force scalaVersion, add the following:",
         "\tivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }",
@@ -153,7 +156,7 @@ class EvictionWarningSpec extends BaseIvySpecification {
         "Found version conflict(s) in library dependencies; some are suspected to be binary incompatible:",
         "",
         "\t* commons-io:commons-io:2.4 is selected over 1.4",
-        "\t    +- com.example:foo:0.1.0                              (depends on 1.4)",
+        "\t    +- com.example:foo:0.1.0:compile                      (depends on 1.4)",
         "",
         "Run 'evicted' to see detailed eviction warnings"
       )
@@ -167,7 +170,7 @@ class EvictionWarningSpec extends BaseIvySpecification {
         "Found version conflict(s) in library dependencies; some are suspected to be binary incompatible:",
         "",
         "\t* commons-io:commons-io:2.4 is selected over 1.4",
-        "\t    +- com.example:foo:0.1.0                              (depends on 1.4)",
+        "\t    +- com.example:foo:0.1.0:compile                      (depends on 1.4)",
         "",
         "Run 'evicted' to see detailed eviction warnings"
       )
@@ -222,7 +225,7 @@ class EvictionWarningSpec extends BaseIvySpecification {
         "Found version conflict(s) in library dependencies; some are suspected to be binary incompatible:",
         "",
         "\t* com.typesafe.akka:akka-actor_2.10:2.3.4 is selected over 2.1.4",
-        "\t    +- com.example:foo:0.1.0                              (depends on 2.1.4)",
+        "\t    +- com.example:foo:0.1.0:compile                      (depends on 2.1.4)",
         "",
         "Run 'evicted' to see detailed eviction warnings"
       )
@@ -258,9 +261,9 @@ class EvictionWarningSpec extends BaseIvySpecification {
         "Found version conflict(s) in library dependencies; some are suspected to be binary incompatible:",
         "",
         "\t* com.typesafe.akka:akka-actor_2.10:2.3.4 is selected over 2.1.4",
-        "\t    +- com.typesafe.akka:akka-remote_2.10:2.3.4           (depends on 2.3.4)",
-        "\t    +- org.w3:banana-rdf_2.10:0.4                         (depends on 2.1.4)",
-        "\t    +- org.w3:banana-sesame_2.10:0.4                      (depends on 2.1.4)",
+        "\t    +- com.typesafe.akka:akka-remote_2.10:2.3.4:compile   (depends on 2.3.4)",
+        "\t    +- org.w3:banana-rdf_2.10:0.4:compile                 (depends on 2.1.4)",
+        "\t    +- org.w3:banana-sesame_2.10:0.4:compile              (depends on 2.1.4)",
         "",
         "Run 'evicted' to see detailed eviction warnings"
       )

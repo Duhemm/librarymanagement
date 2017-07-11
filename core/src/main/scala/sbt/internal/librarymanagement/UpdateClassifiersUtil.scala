@@ -6,12 +6,14 @@ import sbt.librarymanagement._
 
 object UpdateClassifiersUtil {
 
-  def restrictedCopy(m: ModuleID, confs: Boolean) =
-    ModuleID(m.organization, m.name, m.revision)
+  def restrictedCopy(m: ModuleID, confs: Boolean) = {
+    val module = ModuleID(m.organization, m.name, m.revision)
       .withCrossVersion(m.crossVersion)
       .withExtraAttributes(m.extraAttributes)
-      .withConfigurations(if (confs) m.configurations else None)
       .branch(m.branchName)
+    if (confs) module.withConfigurations(m.configurations)
+    else module
+  }
 
   // This version adds explicit artifact
   def classifiedArtifacts(

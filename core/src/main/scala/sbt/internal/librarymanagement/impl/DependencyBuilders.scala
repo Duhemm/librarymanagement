@@ -17,7 +17,8 @@ trait DependencyBuilders {
     new RepositoryName(name)
   }
   final implicit def moduleIDConfigurable(m: ModuleID): ModuleIDConfigurable = {
-    require(m.configurations.isEmpty, "Configurations already specified for module " + m)
+    require(m.configurations.isEmpty || m.configurations == Vector("compile"),
+            "Configurations already specified for module " + m)
     new ModuleIDConfigurable(m)
   }
 }
@@ -43,11 +44,16 @@ final class GroupArtifactID private[sbt] (
 }
 final class ModuleIDConfigurable private[sbt] (moduleID: ModuleID) {
   def %(configuration: Configuration): ModuleID = %(configuration.name)
+  def %(configurations: Vector[String]) = {
+    val cleanConfigs = configurations.map(_.trim)
+    require(configurations.nonEmpty && configurations.forall(_.nonEmpty),
+            "Configurations cannot be empty.")
+    moduleID.withConfigurations(configurations = cleanConfigs)
+  }
 
   def %(configurations: String): ModuleID = {
-    nonEmpty(configurations, "Configurations")
-    val c = configurations
-    moduleID.withConfigurations(configurations = Some(c))
+    val cs = configurations.split(",").toVector
+    %(cs)
   }
 }
 final class RepositoryName private[sbt] (name: String) {

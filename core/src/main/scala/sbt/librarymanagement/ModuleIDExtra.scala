@@ -12,7 +12,7 @@ abstract class ModuleIDExtra {
   def organization: String
   def name: String
   def revision: String
-  def configurations: Option[String]
+  def configurations: Vector[String]
   def isChanging: Boolean
   def isTransitive: Boolean
   def isForce: Boolean
@@ -27,7 +27,7 @@ abstract class ModuleIDExtra {
       organization: String = organization,
       name: String = name,
       revision: String = revision,
-      configurations: Option[String] = configurations,
+      configurations: Vector[String] = configurations,
       isChanging: Boolean = isChanging,
       isTransitive: Boolean = isTransitive,
       isForce: Boolean = isForce,
@@ -41,7 +41,7 @@ abstract class ModuleIDExtra {
 
   protected def toStringImpl: String =
     s"""$organization:$name:$revision""" +
-      (configurations match { case Some(s) => ":" + s; case None => "" }) + {
+      configurations.mkString(":", "", "") + {
       val attr = attributeString
       if (attr == "") ""
       else " " + attr

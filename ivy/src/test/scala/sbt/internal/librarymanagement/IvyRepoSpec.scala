@@ -7,7 +7,7 @@ import InternalDefaults._
 
 class IvyRepoSpec extends BaseIvySpecification with DependencyBuilders {
 
-  val ourModuleID = ModuleID("com.example", "foo", "0.1.0").withConfigurations(Some("compile"))
+  val ourModuleID = ModuleID("com.example", "foo", "0.1.0").withConfigurations(Vector("compile"))
 
   def makeModuleForDepWithSources = {
     // By default a module seems to only have [compile, test, runtime], yet deps automatically map to

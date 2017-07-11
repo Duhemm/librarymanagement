@@ -22,7 +22,7 @@ object ScalaArtifacts {
     if (isDotty)
       Seq(
         ModuleID(org, DottyIDPrefix, version)
-          .withConfigurations(Some(Configurations.ScalaTool.name + "->default(compile)"))
+          .withConfigurations(Vector(Configurations.ScalaTool.name + "->default(compile)"))
           .withCrossVersion(CrossVersion.binary)
       )
     else
@@ -33,7 +33,7 @@ object ScalaArtifacts {
 
   private[this] def scalaToolDependency(org: String, id: String, version: String): ModuleID =
     ModuleID(org, id, version).withConfigurations(
-      Some(Configurations.ScalaTool.name + "->default,optional(default)")
+      Vector(Configurations.ScalaTool.name + "->default", "optional(default)")
     )
 }
 

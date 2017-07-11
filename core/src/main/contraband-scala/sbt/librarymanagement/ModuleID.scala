@@ -8,7 +8,7 @@ final class ModuleID private (
   val organization: String,
   val name: String,
   val revision: String,
-  val configurations: Option[String],
+  val configurations: Vector[String],
   val isChanging: Boolean,
   val isTransitive: Boolean,
   val isForce: Boolean,
@@ -19,7 +19,7 @@ final class ModuleID private (
   val crossVersion: sbt.librarymanagement.CrossVersion,
   val branchName: Option[String]) extends sbt.librarymanagement.ModuleIDExtra with Serializable {
   
-  private def this(organization: String, name: String, revision: String) = this(organization, name, revision, None, false, true, false, Vector.empty, Vector.empty, Vector.empty, Map.empty, sbt.librarymanagement.Disabled(), None)
+  private def this(organization: String, name: String, revision: String) = this(organization, name, revision, scala.collection.immutable.Vector("compile"), false, true, false, Vector.empty, Vector.empty, Vector.empty, Map.empty, sbt.librarymanagement.Disabled(), None)
   
   override def equals(o: Any): Boolean = o match {
     case x: ModuleID => (this.organization == x.organization) && (this.name == x.name) && (this.revision == x.revision) && (this.configurations == x.configurations) && (this.isChanging == x.isChanging) && (this.isTransitive == x.isTransitive) && (this.isForce == x.isForce) && (this.explicitArtifacts == x.explicitArtifacts) && (this.inclusions == x.inclusions) && (this.exclusions == x.exclusions) && (this.extraAttributes == x.extraAttributes) && (this.crossVersion == x.crossVersion) && (this.branchName == x.branchName)
@@ -31,7 +31,7 @@ final class ModuleID private (
   override def toString: String = {
     this.toStringImpl
   }
-  protected[this] def copy(organization: String = organization, name: String = name, revision: String = revision, configurations: Option[String] = configurations, isChanging: Boolean = isChanging, isTransitive: Boolean = isTransitive, isForce: Boolean = isForce, explicitArtifacts: Vector[sbt.librarymanagement.Artifact] = explicitArtifacts, inclusions: Vector[sbt.librarymanagement.InclExclRule] = inclusions, exclusions: Vector[sbt.librarymanagement.InclExclRule] = exclusions, extraAttributes: Map[String, String] = extraAttributes, crossVersion: sbt.librarymanagement.CrossVersion = crossVersion, branchName: Option[String] = branchName): ModuleID = {
+  protected[this] def copy(organization: String = organization, name: String = name, revision: String = revision, configurations: Vector[String] = configurations, isChanging: Boolean = isChanging, isTransitive: Boolean = isTransitive, isForce: Boolean = isForce, explicitArtifacts: Vector[sbt.librarymanagement.Artifact] = explicitArtifacts, inclusions: Vector[sbt.librarymanagement.InclExclRule] = inclusions, exclusions: Vector[sbt.librarymanagement.InclExclRule] = exclusions, extraAttributes: Map[String, String] = extraAttributes, crossVersion: sbt.librarymanagement.CrossVersion = crossVersion, branchName: Option[String] = branchName): ModuleID = {
     new ModuleID(organization, name, revision, configurations, isChanging, isTransitive, isForce, explicitArtifacts, inclusions, exclusions, extraAttributes, crossVersion, branchName)
   }
   def withOrganization(organization: String): ModuleID = {
@@ -43,7 +43,7 @@ final class ModuleID private (
   def withRevision(revision: String): ModuleID = {
     copy(revision = revision)
   }
-  def withConfigurations(configurations: Option[String]): ModuleID = {
+  def withConfigurations(configurations: Vector[String]): ModuleID = {
     copy(configurations = configurations)
   }
   def withIsChanging(isChanging: Boolean): ModuleID = {
@@ -76,6 +76,6 @@ final class ModuleID private (
 }
 object ModuleID extends sbt.librarymanagement.ModuleIDFunctions {
   
-  def apply(organization: String, name: String, revision: String): ModuleID = new ModuleID(organization, name, revision, None, false, true, false, Vector.empty, Vector.empty, Vector.empty, Map.empty, sbt.librarymanagement.Disabled(), None)
-  def apply(organization: String, name: String, revision: String, configurations: Option[String], isChanging: Boolean, isTransitive: Boolean, isForce: Boolean, explicitArtifacts: Vector[sbt.librarymanagement.Artifact], inclusions: Vector[sbt.librarymanagement.InclExclRule], exclusions: Vector[sbt.librarymanagement.InclExclRule], extraAttributes: Map[String, String], crossVersion: sbt.librarymanagement.CrossVersion, branchName: Option[String]): ModuleID = new ModuleID(organization, name, revision, configurations, isChanging, isTransitive, isForce, explicitArtifacts, inclusions, exclusions, extraAttributes, crossVersion, branchName)
+  def apply(organization: String, name: String, revision: String): ModuleID = new ModuleID(organization, name, revision, scala.collection.immutable.Vector("compile"), false, true, false, Vector.empty, Vector.empty, Vector.empty, Map.empty, sbt.librarymanagement.Disabled(), None)
+  def apply(organization: String, name: String, revision: String, configurations: Vector[String], isChanging: Boolean, isTransitive: Boolean, isForce: Boolean, explicitArtifacts: Vector[sbt.librarymanagement.Artifact], inclusions: Vector[sbt.librarymanagement.InclExclRule], exclusions: Vector[sbt.librarymanagement.InclExclRule], extraAttributes: Map[String, String], crossVersion: sbt.librarymanagement.CrossVersion, branchName: Option[String]): ModuleID = new ModuleID(organization, name, revision, configurations, isChanging, isTransitive, isForce, explicitArtifacts, inclusions, exclusions, extraAttributes, crossVersion, branchName)
 }

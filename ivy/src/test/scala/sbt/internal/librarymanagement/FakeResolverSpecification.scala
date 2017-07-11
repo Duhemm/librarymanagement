@@ -10,12 +10,12 @@ class FakeResolverSpecification extends BaseIvySpecification {
   import FakeResolver._
 
   val myModule =
-    ModuleID("org.example", "my-module", "0.0.1-SNAPSHOT").withConfigurations(Some("compile"))
-  val example = ModuleID("com.example", "example", "1.0.0").withConfigurations(Some("compile"))
+    ModuleID("org.example", "my-module", "0.0.1-SNAPSHOT").withConfigurations(Vector("compile"))
+  val example = ModuleID("com.example", "example", "1.0.0").withConfigurations(Vector("compile"))
   val anotherExample =
-    ModuleID("com.example", "another-example", "1.0.0").withConfigurations(Some("compile"))
+    ModuleID("com.example", "another-example", "1.0.0").withConfigurations(Vector("compile"))
   val nonExisting =
-    ModuleID("com.example", "does-not-exist", "1.2.3").withConfigurations(Some("compile"))
+    ModuleID("com.example", "does-not-exist", "1.2.3").withConfigurations(Vector("compile"))
 
   "The FakeResolver" should "find modules with only one artifact" in {
     val m = getModule(myModule)

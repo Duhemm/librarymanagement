@@ -24,7 +24,7 @@ abstract class ConfigurationReportExtra {
     val module = mr.module
     if (module.configurations.isEmpty) {
       val conf = mr.configurations map (c => s"$configuration->$c") mkString ";"
-      module.withConfigurations(Some(conf))
+      module.withConfigurations(Vector(conf))
     } else module
   }
 
@@ -135,9 +135,9 @@ abstract class UpdateReportExtra {
         v reduceLeft { (agg, x) =>
           agg.withConfigurations(
             (agg.configurations, x.configurations) match {
-              case (None, _)            => x.configurations
-              case (Some(ac), None)     => Some(ac)
-              case (Some(ac), Some(xc)) => Some(s"$ac;$xc")
+              case (Vector("compile"), _)  => x.configurations
+              case (ac, Vector("compile")) => ac
+              case (ac, xc)                => ac ++ xc
             }
           )
         }
